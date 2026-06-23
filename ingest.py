@@ -17,7 +17,15 @@ import sys
 from datetime import datetime, timezone
 from pathlib import Path
 
-from common import Document, Turn, chunk_turns, split_oversized, WINDOW_CHARS, OVERLAP_TURNS, MAX_CHUNK_CHARS
+from common import (
+    Document,
+    Turn,
+    chunk_turns,
+    split_oversized,
+    WINDOW_CHARS,
+    OVERLAP_TURNS,
+    MAX_CHUNK_CHARS,
+)
 
 
 def extract_text(message: dict) -> str:

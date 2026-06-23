@@ -6,7 +6,6 @@ are tested here.
 
 import json
 
-import pytest
 
 from ingest_code_sessions import (
     _count_descendants,
@@ -20,6 +19,7 @@ from ingest_code_sessions import (
 # ---------------------------------------------------------------------------
 # parse_session
 # ---------------------------------------------------------------------------
+
 
 def test_parse_session_basic(minimal_session_jsonl) -> None:
     nodes, adjacency, root_uuid, title, cwd = parse_session(minimal_session_jsonl)
@@ -41,13 +41,15 @@ def test_parse_session_empty_file(tmp_path) -> None:
 def test_parse_session_malformed_json_lines(tmp_path) -> None:
     path = tmp_path / "mixed.jsonl"
     lines = [
-        json.dumps({
-            "type": "user",
-            "uuid": "user-001",
-            "parentUuid": None,
-            "timestamp": "2024-01-01T00:00:00Z",
-            "message": {"role": "user", "content": "Hello"},
-        }),
+        json.dumps(
+            {
+                "type": "user",
+                "uuid": "user-001",
+                "parentUuid": None,
+                "timestamp": "2024-01-01T00:00:00Z",
+                "message": {"role": "user", "content": "Hello"},
+            }
+        ),
         "this is not json {{{",
     ]
     path.write_text("\n".join(lines))
@@ -60,6 +62,7 @@ def test_parse_session_malformed_json_lines(tmp_path) -> None:
 # _count_descendants
 # ---------------------------------------------------------------------------
 
+
 def test_count_descendants() -> None:
     adjacency = {"A": ["B"], "B": ["C"]}
     assert _count_descendants("A", adjacency, {}) == 2
@@ -69,8 +72,14 @@ def test_count_descendants() -> None:
 # walk_canonical
 # ---------------------------------------------------------------------------
 
+
 def _make_node(uuid: str) -> dict:
-    return {"type": "user", "uuid": uuid, "message": {"role": "user", "content": "msg"}, "timestamp": "2024-01-01T00:00:00Z"}
+    return {
+        "type": "user",
+        "uuid": uuid,
+        "message": {"role": "user", "content": "msg"},
+        "timestamp": "2024-01-01T00:00:00Z",
+    }
 
 
 def test_walk_canonical_linear() -> None:
@@ -104,6 +113,7 @@ def test_walk_canonical_fork_picks_heavier_branch() -> None:
 # ---------------------------------------------------------------------------
 # session_to_documents
 # ---------------------------------------------------------------------------
+
 
 def test_session_to_documents_basic() -> None:
     canonical = [
@@ -140,6 +150,7 @@ def test_session_to_documents_empty_canonical() -> None:
 # _extract_text
 # ---------------------------------------------------------------------------
 
+
 def test_extract_text_string_content() -> None:
     record = {"message": {"content": "plain string"}}
     assert _extract_text(record) == "plain string"
@@ -158,9 +169,5 @@ def test_extract_text_list_content() -> None:
 
 
 def test_extract_text_tool_result_skipped() -> None:
-    record = {
-        "message": {
-            "content": [{"type": "tool_result", "content": "automated feedback"}]
-        }
-    }
+    record = {"message": {"content": [{"type": "tool_result", "content": "automated feedback"}]}}
     assert _extract_text(record) == ""

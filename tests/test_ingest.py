@@ -13,6 +13,7 @@ from ingest import build_documents, conversation_to_documents, extract_text
 # extract_text
 # ---------------------------------------------------------------------------
 
+
 def test_extract_text_top_level() -> None:
     msg = {"text": "Hello world", "content": []}
     assert extract_text(msg) == "Hello world"
@@ -38,13 +39,24 @@ def test_extract_text_skips_non_text_blocks() -> None:
 # conversation_to_documents
 # ---------------------------------------------------------------------------
 
+
 def test_conversation_to_documents_basic() -> None:
     conv = {
         "uuid": "aaaaaaaa-0000-0000-0000-000000000001",
         "name": "Test Conv",
         "chat_messages": [
-            {"sender": "human", "text": "Hello", "created_at": "2024-01-01T00:00:00Z", "content": []},
-            {"sender": "assistant", "text": "Hi there", "created_at": "2024-01-01T00:00:01Z", "content": []},
+            {
+                "sender": "human",
+                "text": "Hello",
+                "created_at": "2024-01-01T00:00:00Z",
+                "content": [],
+            },
+            {
+                "sender": "assistant",
+                "text": "Hi there",
+                "created_at": "2024-01-01T00:00:01Z",
+                "content": [],
+            },
         ],
     }
     docs = conversation_to_documents(conv)
@@ -59,7 +71,12 @@ def test_conversation_to_documents_empty_turns() -> None:
         "uuid": "aaaaaaaa-0000-0000-0000-000000000002",
         "name": "Empty",
         "chat_messages": [
-            {"sender": "human", "text": "", "created_at": "2024-01-01T00:00:00Z", "content": []},
+            {
+                "sender": "human",
+                "text": "",
+                "created_at": "2024-01-01T00:00:00Z",
+                "content": [],
+            },
         ],
     }
     assert conversation_to_documents(conv) == []
@@ -71,9 +88,24 @@ def test_conversation_to_documents_chunk_ids() -> None:
         "uuid": "bbbbbbbb-0000-0000-0000-000000000001",
         "name": "Long Conv",
         "chat_messages": [
-            {"sender": "human", "text": long_text, "created_at": "2024-01-01T00:00:00Z", "content": []},
-            {"sender": "assistant", "text": long_text, "created_at": "2024-01-01T00:00:01Z", "content": []},
-            {"sender": "human", "text": long_text, "created_at": "2024-01-01T00:00:02Z", "content": []},
+            {
+                "sender": "human",
+                "text": long_text,
+                "created_at": "2024-01-01T00:00:00Z",
+                "content": [],
+            },
+            {
+                "sender": "assistant",
+                "text": long_text,
+                "created_at": "2024-01-01T00:00:01Z",
+                "content": [],
+            },
+            {
+                "sender": "human",
+                "text": long_text,
+                "created_at": "2024-01-01T00:00:02Z",
+                "content": [],
+            },
         ],
     }
     docs = conversation_to_documents(conv)
@@ -85,6 +117,7 @@ def test_conversation_to_documents_chunk_ids() -> None:
 # ---------------------------------------------------------------------------
 # build_documents
 # ---------------------------------------------------------------------------
+
 
 def test_build_documents_missing_conversations_json(tmp_path) -> None:
     with pytest.raises(FileNotFoundError):
@@ -127,6 +160,7 @@ def test_build_documents_project_docs(tmp_path, minimal_export) -> None:
 # chunk_turns
 # ---------------------------------------------------------------------------
 
+
 def test_chunk_turns_single_window() -> None:
     turns = [
         Turn(sender="human", text="Hi", timestamp="2024-01-01T00:00:00Z"),
@@ -153,6 +187,7 @@ def test_chunk_turns_multiple_windows() -> None:
 # ---------------------------------------------------------------------------
 # split_oversized
 # ---------------------------------------------------------------------------
+
 
 def test_split_oversized_within_limit() -> None:
     body = "short string"

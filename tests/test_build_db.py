@@ -29,16 +29,42 @@ def test_partial_export_merge(tmp_path, make_db, fake_vec) -> None:
     uuid_b = "bbbbbbbb-0000-0000-0000-000000000000"
 
     old_rows = [
-        (f"{uuid_a}:0", "text A", "conversation", "Conv A", "2024-01-01", fake_vec(), "claude_ai", None),
-        (f"{uuid_b}:0", "text B", "conversation", "Conv B", "2024-01-02", fake_vec(), "claude_ai", None),
+        (
+            f"{uuid_a}:0",
+            "text A",
+            "conversation",
+            "Conv A",
+            "2024-01-01",
+            fake_vec(),
+            "claude_ai",
+            None,
+        ),
+        (
+            f"{uuid_b}:0",
+            "text B",
+            "conversation",
+            "Conv B",
+            "2024-01-02",
+            fake_vec(),
+            "claude_ai",
+            None,
+        ),
     ]
 
     old_db = tmp_path / "old.db"
     new_db = tmp_path / "new.db"
     make_db(old_db, CURRENT_MODEL, old_rows)
 
-    new_docs = [Document(id=f"{uuid_b}:0", text="text B v2", source_type="conversation",
-                         title="Conv B", timestamp="2024-01-02", source="claude_ai")]
+    new_docs = [
+        Document(
+            id=f"{uuid_b}:0",
+            text="text B v2",
+            source_type="conversation",
+            title="Conv B",
+            timestamp="2024-01-02",
+            source="claude_ai",
+        )
+    ]
     new_vecs = np.zeros((1, DIM), dtype="float32")
     covered = {uuid_b, "memories"}
 
@@ -54,15 +80,32 @@ def test_full_export_no_merge(tmp_path, make_db, fake_vec) -> None:
     uuid_a = "aaaaaaaa-0000-0000-0000-000000000000"
 
     old_rows = [
-        (f"{uuid_a}:0", "old text", "conversation", "Conv A", "2024-01-01", fake_vec(), "claude_ai", None),
+        (
+            f"{uuid_a}:0",
+            "old text",
+            "conversation",
+            "Conv A",
+            "2024-01-01",
+            fake_vec(),
+            "claude_ai",
+            None,
+        ),
     ]
 
     old_db = tmp_path / "old.db"
     new_db = tmp_path / "new.db"
     make_db(old_db, CURRENT_MODEL, old_rows)
 
-    new_docs = [Document(id=f"{uuid_a}:0", text="new text", source_type="conversation",
-                         title="Conv A", timestamp="2024-01-01", source="claude_ai")]
+    new_docs = [
+        Document(
+            id=f"{uuid_a}:0",
+            text="new text",
+            source_type="conversation",
+            title="Conv A",
+            timestamp="2024-01-01",
+            source="claude_ai",
+        )
+    ]
     new_vecs = np.zeros((1, DIM), dtype="float32")
     covered = {uuid_a, "memories"}
 
@@ -80,15 +123,32 @@ def test_model_mismatch_skips_merge(tmp_path, make_db, fake_vec) -> None:
     uuid_b = "bbbbbbbb-0000-0000-0000-000000000000"
 
     old_rows = [
-        (f"{uuid_a}:0", "text A", "conversation", "Conv A", "2024-01-01", fake_vec(), "claude_ai", None),
+        (
+            f"{uuid_a}:0",
+            "text A",
+            "conversation",
+            "Conv A",
+            "2024-01-01",
+            fake_vec(),
+            "claude_ai",
+            None,
+        ),
     ]
 
     old_db = tmp_path / "old.db"
     new_db = tmp_path / "new.db"
     make_db(old_db, "some-other-model/v1", old_rows)
 
-    new_docs = [Document(id=f"{uuid_b}:0", text="text B", source_type="conversation",
-                         title="Conv B", timestamp="2024-01-02", source="claude_ai")]
+    new_docs = [
+        Document(
+            id=f"{uuid_b}:0",
+            text="text B",
+            source_type="conversation",
+            title="Conv B",
+            timestamp="2024-01-02",
+            source="claude_ai",
+        )
+    ]
     new_vecs = np.zeros((1, DIM), dtype="float32")
     covered = {uuid_b, "memories"}
 
@@ -106,8 +166,16 @@ def test_first_run_no_old_db(tmp_path, fake_vec) -> None:
     nonexistent = tmp_path / "does_not_exist.db"
     new_db = tmp_path / "new.db"
 
-    new_docs = [Document(id=f"{uuid_a}:0", text="text A", source_type="conversation",
-                         title="Conv A", timestamp="2024-01-01", source="claude_ai")]
+    new_docs = [
+        Document(
+            id=f"{uuid_a}:0",
+            text="text A",
+            source_type="conversation",
+            title="Conv A",
+            timestamp="2024-01-01",
+            source="claude_ai",
+        )
+    ]
     new_vecs = np.zeros((1, DIM), dtype="float32")
     covered = {uuid_a, "memories"}
 
@@ -123,18 +191,42 @@ def test_code_session_chunks_not_merged(tmp_path, make_db, fake_vec) -> None:
     ai_uuid = "aaaaaaaa-0000-0000-0000-000000000000"
 
     old_rows = [
-        (f"code:{code_uuid}:0", "code text", "code_session", "Code Session", "2024-01-01",
-         fake_vec(), "claude_code", "myproject"),
-        (f"{ai_uuid}:0", "ai text", "conversation", "Conv A", "2024-01-01",
-         fake_vec(), "claude_ai", None),
+        (
+            f"code:{code_uuid}:0",
+            "code text",
+            "code_session",
+            "Code Session",
+            "2024-01-01",
+            fake_vec(),
+            "claude_code",
+            "myproject",
+        ),
+        (
+            f"{ai_uuid}:0",
+            "ai text",
+            "conversation",
+            "Conv A",
+            "2024-01-01",
+            fake_vec(),
+            "claude_ai",
+            None,
+        ),
     ]
 
     old_db = tmp_path / "old.db"
     new_db = tmp_path / "new.db"
     make_db(old_db, CURRENT_MODEL, old_rows)
 
-    new_docs = [Document(id="memories", text="mem", source_type="memory",
-                         title="Working memory summary", timestamp="2024-01-01", source="claude_ai")]
+    new_docs = [
+        Document(
+            id="memories",
+            text="mem",
+            source_type="memory",
+            title="Working memory summary",
+            timestamp="2024-01-01",
+            source="claude_ai",
+        )
+    ]
     new_vecs = np.zeros((1, DIM), dtype="float32")
     covered = {"memories"}
 

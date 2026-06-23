@@ -25,7 +25,15 @@ from pathlib import Path
 import numpy as np
 
 from embed import embed_documents
-from common import Document, Turn, chunk_turns, split_oversized, WINDOW_CHARS, OVERLAP_TURNS, MAX_CHUNK_CHARS
+from common import (
+    Document,
+    Turn,
+    chunk_turns,
+    split_oversized,
+    WINDOW_CHARS,
+    OVERLAP_TURNS,
+    MAX_CHUNK_CHARS,
+)
 
 SESSIONS_DIR = Path.home() / ".claude" / "projects"
 MTIME_GRACE = 60  # skip files written within the last N seconds (may be mid-write)
@@ -222,20 +230,18 @@ def session_to_documents(
         body = "\n".join(f"{t.sender}: {t.text}" for t in window)
         pieces = split_oversized(body, MAX_CHUNK_CHARS - title_overhead)
         for j, piece in enumerate(pieces):
-            chunk_id = (
-                f"code:{session_uuid}:{i}"
-                if len(pieces) == 1
-                else f"code:{session_uuid}:{i}.{j}"
+            chunk_id = f"code:{session_uuid}:{i}" if len(pieces) == 1 else f"code:{session_uuid}:{i}.{j}"
+            docs.append(
+                Document(
+                    id=chunk_id,
+                    text=f"{title}\n\n{piece}",
+                    source_type="code_session",
+                    title=title,
+                    timestamp=window[-1].timestamp,
+                    source="claude_code",
+                    project=project,
+                )
             )
-            docs.append(Document(
-                id=chunk_id,
-                text=f"{title}\n\n{piece}",
-                source_type="code_session",
-                title=title,
-                timestamp=window[-1].timestamp,
-                source="claude_code",
-                project=project,
-            ))
     return docs
 
 
@@ -253,15 +259,26 @@ def upsert_session(
         "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         (
             (
-                d.id, d.text, d.source_type, d.title, d.timestamp,
-                vec.astype("float32").tobytes(), d.source, d.project,
+                d.id,
+                d.text,
+                d.source_type,
+                d.title,
+                d.timestamp,
+                vec.astype("float32").tobytes(),
+                d.source,
+                d.project,
             )
             for d, vec in zip(docs, vectors)
         ),
     )
     conn.execute(
         "INSERT OR REPLACE INTO sessions (session_uuid, source, file_mtime, ingested_at) VALUES (?, ?, ?, ?)",
-        (session_uuid, "claude_code", file_mtime, datetime.now(timezone.utc).isoformat()),
+        (
+            session_uuid,
+            "claude_code",
+            file_mtime,
+            datetime.now(timezone.utc).isoformat(),
+        ),
     )
     conn.commit()
 
@@ -300,7 +317,10 @@ def main(db_path: Path, pruned_out=None) -> None:
             skipped_count += 1
             continue
         if root_uuid is None:
-            print(f"  warning: skipping {path.name} — no root message found (malformed session)", file=sys.stderr)
+            print(
+                f"  warning: skipping {path.name} — no root message found (malformed session)",
+                file=sys.stderr,
+            )
             skipped_count += 1
             continue
 
@@ -331,7 +351,10 @@ def main(db_path: Path, pruned_out=None) -> None:
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
-    parser.add_argument("--db", default=os.environ.get("CONTEXT_BRIDGE_DB_PATH") or str(Path(__file__).parent / "chat_memory.db"))
+    parser.add_argument(
+        "--db",
+        default=os.environ.get("CONTEXT_BRIDGE_DB_PATH") or str(Path(__file__).parent / "chat_memory.db"),
+    )
     parser.add_argument(
         "--pruned-out",
         default=None,
@@ -344,7 +367,10 @@ if __name__ == "__main__":
         try:
             pruned_out = open(args.pruned_out, "w")
         except OSError as e:
-            print(f"Error: cannot open --pruned-out {args.pruned_out!r}: {e}", file=sys.stderr)
+            print(
+                f"Error: cannot open --pruned-out {args.pruned_out!r}: {e}",
+                file=sys.stderr,
+            )
             sys.exit(1)
     try:
         main(Path(args.db), pruned_out)

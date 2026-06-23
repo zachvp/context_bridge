@@ -77,24 +77,28 @@ def minimal_session_jsonl(tmp_path: Path) -> Path:
     path = tmp_path / "session-abc123.jsonl"
     lines = [
         json.dumps({"type": "ai-title", "aiTitle": "Test Session"}),
-        json.dumps({
-            "type": "user",
-            "uuid": "user-001",
-            "parentUuid": None,
-            "timestamp": "2024-01-01T00:00:00Z",
-            "message": {"role": "user", "content": "Hello Claude"},
-            "cwd": "/home/user/myproject",
-        }),
-        json.dumps({
-            "type": "assistant",
-            "uuid": "asst-001",
-            "parentUuid": "user-001",
-            "timestamp": "2024-01-01T00:00:01Z",
-            "message": {
-                "role": "assistant",
-                "content": [{"type": "text", "text": "Hello! How can I help?"}],
-            },
-        }),
+        json.dumps(
+            {
+                "type": "user",
+                "uuid": "user-001",
+                "parentUuid": None,
+                "timestamp": "2024-01-01T00:00:00Z",
+                "message": {"role": "user", "content": "Hello Claude"},
+                "cwd": "/home/user/myproject",
+            }
+        ),
+        json.dumps(
+            {
+                "type": "assistant",
+                "uuid": "asst-001",
+                "parentUuid": "user-001",
+                "timestamp": "2024-01-01T00:00:01Z",
+                "message": {
+                    "role": "assistant",
+                    "content": [{"type": "text", "text": "Hello! How can I help?"}],
+                },
+            }
+        ),
     ]
     path.write_text("\n".join(lines))
     return path

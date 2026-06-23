@@ -41,6 +41,7 @@ def _collect_docs(export_dir: Path) -> list[Document]:
 
     return all_docs
 
+
 SCHEMA_PATH = Path(__file__).parent / "schema.sql"
 
 
@@ -112,7 +113,16 @@ def write_db(
         "INSERT INTO chunks (id, text, source_type, title, timestamp, embedding, source, project) "
         "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
         (
-            (d.id, d.text, d.source_type, d.title, d.timestamp, vec.astype("float32").tobytes(), d.source, d.project)
+            (
+                d.id,
+                d.text,
+                d.source_type,
+                d.title,
+                d.timestamp,
+                vec.astype("float32").tobytes(),
+                d.source,
+                d.project,
+            )
             for d, vec in zip(docs, vectors)
         ),
     )
@@ -157,6 +167,9 @@ def main(export_dir: Path, db_path: Path) -> None:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("export_dir", nargs="?", default=str(Path(__file__).parent / "data" / "inspect"))
-    parser.add_argument("--out", default=os.environ.get("CONTEXT_BRIDGE_DB_PATH") or str(Path(__file__).parent / "chat_memory.db"))
+    parser.add_argument(
+        "--out",
+        default=os.environ.get("CONTEXT_BRIDGE_DB_PATH") or str(Path(__file__).parent / "chat_memory.db"),
+    )
     args = parser.parse_args()
     main(Path(args.export_dir), Path(args.out))

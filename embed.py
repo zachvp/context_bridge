@@ -48,14 +48,21 @@ def get_model():
     then CPU. Each device is exercised with a warmup encode before committing —
     MPS and CUDA op support can fail at runtime even if the device is present."""
     from sentence_transformers import SentenceTransformer
+
     global _model
     if _model is not None:
         return _model
 
     if not _model_is_cached(MODEL_NAME):
         # stderr, not stdout: stdout is the MCP stdio JSON-RPC channel in server.py.
-        print(f"  first run: downloading {MODEL_NAME} (~440 MB from HuggingFace)...", file=sys.stderr)
-        print(f"  cached at ~/.cache/huggingface/ after this — subsequent runs are instant.", file=sys.stderr)
+        print(
+            f"  first run: downloading {MODEL_NAME} (~440 MB from HuggingFace)...",
+            file=sys.stderr,
+        )
+        print(
+            "  cached at ~/.cache/huggingface/ after this — subsequent runs are instant.",
+            file=sys.stderr,
+        )
 
     for i, device in enumerate(_DEVICES):
         try:
