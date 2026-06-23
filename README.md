@@ -16,14 +16,14 @@ writes a `.env` file for local config.
 | Variable | Default | Purpose |
 |---|---|---|
 | `CONTEXT_BRIDGE_DB_PATH` | `./chat_memory.db` | Where the database lives |
-| `CONTEXT_BRIDGE_MODEL` | `BAAI/bge-base-en-v1.5` | HuggingFace model ID (must be sentence-transformers compatible); changing after a build triggers a full rebuild |
+| `CONTEXT_BRIDGE_MODEL` | `BAAI/bge-base-en-v1.5` | fastembed model ID; changing after a build triggers a full rebuild |
 | `CONTEXT_BRIDGE_BATCH_SIZE` | `64` | Embedding batch size; reduce to `16` or `8` if you hit OOM during build |
 
 Edit `.env` directly to change these after initial setup. See `.env.example` for
 the template.
 
 **Changing the embedding model:** set `CONTEXT_BRIDGE_MODEL` to a different
-HuggingFace sentence-transformers model ID, then run a **full rebuild** with your
+fastembed-compatible model ID, then run a **full rebuild** with your
 complete Claude.ai export — `build_db.py` detects the model mismatch and skips
 the partial-export merge to avoid mixing incompatible vectors. Partial exports
 are safe again after the first full rebuild with the new model.
@@ -119,9 +119,8 @@ cross-project noise is a known retrieval quality ceiling.
 ## Troubleshooting / FAQ
 
 **The model download hangs or fails.**
-HuggingFace downloads `~440 MB` on first run. If it times out, set
-`HF_HUB_OFFLINE=1` and re-run after the model is cached, or check your network.
-The cache lives at `~/.cache/huggingface/`.
+fastembed downloads `~130 MB` on first run. If it times out, check your network
+and retry. The cache lives at `~/.cache/fastembed/`.
 
 **`build_all.sh` says "OOM" or crashes during embedding.**
 Reduce `CONTEXT_BRIDGE_BATCH_SIZE` in `.env` (try `16` or `8`) and re-run.

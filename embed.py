@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
-Embedding step: turn Documents into vectors with a local sentence-transformers
-model. No DB yet — running this directly just times the run and reports
-shape/throughput, as a checkpoint before wiring it into the DB writer.
+Embedding step: turn Documents into vectors with a local fastembed model
+(ONNX-backed, no PyTorch required). No DB yet — running this directly just
+times the run and reports shape/throughput, as a checkpoint before wiring it
+into the DB writer.
 
 Usage:
     python3 embed.py [export_dir]
@@ -19,15 +20,13 @@ from ingest import build_documents, Document
 
 # bge models are trained with an asymmetric convention: passages are embedded
 # as-is, but queries get a fixed instruction prefix to push them into the same
-# representation space as a "thing worth retrieving for this question." Only
-# applies to embed_query, not embed_documents.
+# representation space as a "thing worth retrieving for this question."
+# fastembed handles this automatically via query_embed() vs embed().
 #
-# Must be a HuggingFace model ID compatible with sentence-transformers.
-# Override via CONTEXT_BRIDGE_MODEL in .env.
+# Must be a model ID supported by fastembed. Override via CONTEXT_BRIDGE_MODEL.
 # WARNING: changing the model after building a DB triggers a full rebuild on
 # the next run (the meta table mismatch is detected automatically).
 MODEL_NAME = os.environ.get("CONTEXT_BRIDGE_MODEL", "BAAI/bge-base-en-v1.5")
-QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
 
 # Number of documents per embedding batch. Reduce if you hit OOM during build.
 # Override via CONTEXT_BRIDGE_BATCH_SIZE in .env.
@@ -35,19 +34,16 @@ BATCH_SIZE = int(os.environ.get("CONTEXT_BRIDGE_BATCH_SIZE", "64"))
 
 _model = None
 
-_DEVICES = ("cuda", "mps", "cpu")
-
 
 def _model_is_cached(model_name: str) -> bool:
-    cache_root = Path(os.environ.get("HF_HOME", Path.home() / ".cache" / "huggingface")) / "hub"
-    return (cache_root / f"models--{model_name.replace('/', '--')}").exists()
+    cache_root = Path(os.environ.get("FASTEMBED_CACHE_PATH", Path.home() / ".cache" / "fastembed"))
+    slug = model_name.replace("/", "_")
+    return any(cache_root.glob(f"{slug}*"))
 
 
 def get_model():
-    """Load the embedding model once. Tries CUDA, then MPS (Apple Silicon),
-    then CPU. Each device is exercised with a warmup encode before committing —
-    MPS and CUDA op support can fail at runtime even if the device is present."""
-    from sentence_transformers import SentenceTransformer
+    """Load the embedding model once (ONNX/CPU via fastembed)."""
+    from fastembed import TextEmbedding
 
     global _model
     if _model is not None:
@@ -56,38 +52,30 @@ def get_model():
     if not _model_is_cached(MODEL_NAME):
         # stderr, not stdout: stdout is the MCP stdio JSON-RPC channel in server.py.
         print(
-            f"  first run: downloading {MODEL_NAME} (~440 MB from HuggingFace)...",
+            f"  first run: downloading {MODEL_NAME} (~130 MB)...",
             file=sys.stderr,
         )
         print(
-            "  cached at ~/.cache/huggingface/ after this — subsequent runs are instant.",
+            "  cached at ~/.cache/fastembed/ after this — subsequent runs are instant.",
             file=sys.stderr,
         )
 
-    for i, device in enumerate(_DEVICES):
-        try:
-            model = SentenceTransformer(MODEL_NAME, device=device)
-            model.encode(["warmup"])
-            print(f"embedding model loaded on device={device!r}", file=sys.stderr)
-            _model = model
-            return model
-        except Exception as e:
-            if i < len(_DEVICES) - 1:
-                print(f"device={device!r} failed ({e}); trying next", file=sys.stderr)
-    raise RuntimeError(f"could not load {MODEL_NAME} on any device (tried {', '.join(_DEVICES)})")
+    _model = TextEmbedding(MODEL_NAME)
+    print("embedding model loaded (ONNX/CPU)", file=sys.stderr)
+    return _model
 
 
 def embed_documents(docs: list[Document]) -> np.ndarray:
     """Embed document text as-is (no prefix) — these are the passages."""
     model = get_model()
     texts = [d.text for d in docs]
-    return model.encode(texts, batch_size=BATCH_SIZE, show_progress_bar=True, normalize_embeddings=True)
+    return np.array(list(model.embed(texts, batch_size=BATCH_SIZE)))
 
 
 def embed_query(text: str) -> np.ndarray:
-    """Embed a search query — prefixed per bge's asymmetric convention."""
+    """Embed a search query — fastembed applies the bge prefix automatically."""
     model = get_model()
-    return model.encode([QUERY_PREFIX + text], normalize_embeddings=True)[0]
+    return np.array(list(model.query_embed(text)))[0]
 
 
 def main(export_dir: Path) -> None:

@@ -15,8 +15,8 @@ threads instead of re-deriving them.
 ## Stack decisions (locked in)
 - **Vector store:** SQLite + `sqlite-vec` — single file, no server process, easy to back up,
   plenty fast at personal-chat-history scale.
-- **Embeddings:** local `sentence-transformers` model — free, offline, no API key, good enough
-  recall for this use case.
+- **Embeddings:** local `fastembed` model (ONNX-backed, no PyTorch) — free, offline, no API key,
+  good enough recall for this use case.
 - **Interface:** an MCP server exposing search/retrieval tools, registered in Claude Code's MCP
   config so it's available as a callable tool every session.
 
@@ -46,7 +46,7 @@ fragile against UI changes and ToS-gray; not worth it for a "re-run after export
       - unzip, parse conversations.json
       - chunk per conversation (sliding window of N turns, not single messages,
         to keep a thread's thesis intact)
-      - embed each chunk (sentence-transformers, local)
+      - embed each chunk (fastembed, local)
       - upsert into SQLite (rows keyed by conversation_uuid + message_hash)
       ▼
  chat_memory.db (SQLite + sqlite-vec)

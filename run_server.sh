@@ -36,7 +36,7 @@ fi
 
 # Preflight: verify required packages are importable before handing off to
 # the MCP runtime, which surfaces errors poorly over stdio.
-if ! "$PYTHON" -c "import mcp, sentence_transformers, numpy" 2>/dev/null; then
+if ! "$PYTHON" -c "import mcp, fastembed, numpy" 2>/dev/null; then
     echo "Error: required Python packages not found." >&2
     echo "Run: $SCRIPT_DIR/wizard.sh" >&2
     exit 1

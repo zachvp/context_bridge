@@ -38,7 +38,7 @@ fi
 echo ""
 echo "=== Python imports ==="
 check "import mcp"                  python3 -c "import mcp"
-check "import sentence_transformers" python3 -c "import sentence_transformers"
+check "import fastembed"              python3 -c "import fastembed"
 check "import numpy"                python3 -c "import numpy"
 
 # ---------------------------------------------------------------------------
@@ -73,7 +73,7 @@ EOF
 echo ""
 echo "=== Preflight check ==="
 check "packages importable (happy path)" \
-    python3 -c "import mcp, sentence_transformers, numpy"
+    python3 -c "import mcp, fastembed, numpy"
 
 # Simulate the preflight condition from run_server.sh using a bad interpreter
 check "preflight exits non-zero on missing packages" bash - <<'EOF'
