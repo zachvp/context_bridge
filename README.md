@@ -18,6 +18,8 @@ writes a `.env` file for local config.
 | Variable | Default | Purpose |
 |---|---|---|
 | `CONTEXT_BRIDGE_DB_PATH` | `./chat_memory.db` | Where the database lives |
+| `CONTEXT_BRIDGE_MODEL` | `BAAI/bge-base-en-v1.5` | HuggingFace model ID (must be sentence-transformers compatible); changing after a build triggers a full rebuild |
+| `CONTEXT_BRIDGE_BATCH_SIZE` | `64` | Embedding batch size; reduce to `16` or `8` if you hit OOM during build |
 
 Edit `.env` directly to change these after initial setup. See `.env.example` for
 the template.

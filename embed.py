@@ -8,6 +8,7 @@ Usage:
     python3 embed.py [export_dir]
 """
 
+import os
 import sys
 import time
 from pathlib import Path
@@ -20,42 +21,60 @@ from ingest import build_documents, Document
 # as-is, but queries get a fixed instruction prefix to push them into the same
 # representation space as a "thing worth retrieving for this question." Only
 # applies to embed_query, not embed_documents.
-MODEL_NAME = "BAAI/bge-base-en-v1.5"
+#
+# Must be a HuggingFace model ID compatible with sentence-transformers.
+# Override via CONTEXT_BRIDGE_MODEL in .env.
+# WARNING: changing the model after building a DB triggers a full rebuild on
+# the next run (the meta table mismatch is detected automatically).
+MODEL_NAME = os.environ.get("CONTEXT_BRIDGE_MODEL", "BAAI/bge-base-en-v1.5")
 QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
+
+# Number of documents per embedding batch. Reduce if you hit OOM during build.
+# Override via CONTEXT_BRIDGE_BATCH_SIZE in .env.
+BATCH_SIZE = int(os.environ.get("CONTEXT_BRIDGE_BATCH_SIZE", "64"))
 
 _model = None
 
+_DEVICES = ("cuda", "mps", "cpu")
+
+
+def _model_is_cached(model_name: str) -> bool:
+    cache_root = Path(os.environ.get("HF_HOME", Path.home() / ".cache" / "huggingface")) / "hub"
+    return (cache_root / f"models--{model_name.replace('/', '--')}").exists()
+
 
 def get_model():
-    """Load the embedding model once, preferring the M1's GPU (MPS) with a
-    fallback to CPU if MPS errors on this model — MPS op support is less
-    mature than CUDA's, so this isn't guaranteed in advance."""
+    """Load the embedding model once. Tries CUDA, then MPS (Apple Silicon),
+    then CPU. Each device is exercised with a warmup encode before committing —
+    MPS and CUDA op support can fail at runtime even if the device is present."""
     from sentence_transformers import SentenceTransformer
     global _model
     if _model is not None:
         return _model
 
-    for device in ("mps", "cpu"):
+    if not _model_is_cached(MODEL_NAME):
+        # stderr, not stdout: stdout is the MCP stdio JSON-RPC channel in server.py.
+        print(f"  first run: downloading {MODEL_NAME} (~440 MB from HuggingFace)...", file=sys.stderr)
+        print(f"  cached at ~/.cache/huggingface/ after this — subsequent runs are instant.", file=sys.stderr)
+
+    for i, device in enumerate(_DEVICES):
         try:
             model = SentenceTransformer(MODEL_NAME, device=device)
-            model.encode(["warmup"])  # exercise the model before committing to this device
-            # stderr, not stdout: when this runs inside server.py as an MCP
-            # stdio server, stdout is the JSON-RPC protocol channel — any
-            # stray print() there corrupts the stream for the client.
+            model.encode(["warmup"])
             print(f"embedding model loaded on device={device!r}", file=sys.stderr)
             _model = model
             return model
         except Exception as e:
-            if device == "mps":
-                print(f"device={device!r} failed ({e}); falling back", file=sys.stderr)
-    raise RuntimeError(f"could not load {MODEL_NAME} on mps or cpu")
+            if i < len(_DEVICES) - 1:
+                print(f"device={device!r} failed ({e}); trying next", file=sys.stderr)
+    raise RuntimeError(f"could not load {MODEL_NAME} on any device (tried {', '.join(_DEVICES)})")
 
 
 def embed_documents(docs: list[Document]) -> np.ndarray:
     """Embed document text as-is (no prefix) — these are the passages."""
     model = get_model()
     texts = [d.text for d in docs]
-    return model.encode(texts, batch_size=64, show_progress_bar=True, normalize_embeddings=True)
+    return model.encode(texts, batch_size=BATCH_SIZE, show_progress_bar=True, normalize_embeddings=True)
 
 
 def embed_query(text: str) -> np.ndarray:
