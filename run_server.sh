@@ -1,6 +1,22 @@
-#!/bin/bash
+#!/usr/bin/env bash
 # Entry point for the MCP server registration. Resolves its own directory
 # from $0 so `cd` lands in context_bridge/ regardless of the caller's cwd.
+
+usage() {
+    cat <<EOF
+Usage: ./run_server.sh [-h]
+
+Start the context-bridge MCP server (stdio transport).
+Registered automatically by install.sh — use this for manual smoke checks
+outside of a Claude Code session.
+
+Options:
+  -h, --help    Show this message and exit.
+EOF
+}
+
+[[ "${1:-}" == "-h" || "${1:-}" == "--help" ]] && { usage; exit 0; }
+
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
 cd "$SCRIPT_DIR" || exit 1
 

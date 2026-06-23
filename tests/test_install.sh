@@ -110,6 +110,17 @@ fi
 
 # ---------------------------------------------------------------------------
 echo ""
+echo "=== Structural lint (check_docs.sh) ==="
+if bash tests/check_docs.sh > /tmp/check_docs_out.txt 2>&1; then
+    grep -E '\[(PASS|FAIL)\]' /tmp/check_docs_out.txt | sed 's/^/  /' || true
+    pass "check_docs.sh"
+else
+    grep -E '\[(PASS|FAIL)\]' /tmp/check_docs_out.txt | sed 's/^/  /' || true
+    fail "check_docs.sh (see failures above)"
+fi
+
+# ---------------------------------------------------------------------------
+echo ""
 echo "================================================"
 printf "  %d passed  %d failed  %d skipped\n" "$PASS" "$FAIL" "$SKIP"
 echo "================================================"

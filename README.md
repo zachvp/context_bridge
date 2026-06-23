@@ -58,52 +58,30 @@ history that isn't in the new export is preserved from the old DB.
 skipped (mixing vectors from two models would corrupt search). In that case run
 `build_db.py` with a full export to get a clean rebuild.
 
-## Command cheat sheet
+## Commands
 
-**Refresh the DB from a new export** (standard workflow — run this whenever
-you pull a new Claude.ai export):
-```bash
-cd context_bridge
-./build_all.sh data/chat-archive-<date>.dms
-```
-Pass the export file (`.dms` or `.zip`) and `build_all.sh` handles the unpack
-step automatically. Omit the argument if `data/inspect/` is already populated.
+Each shell script accepts `--help` for full usage and options. Quick reference:
 
-**Log all output to a file** (stdout + stderr, also printed to terminal):
-```bash
-./build_all.sh data/chat-archive-<date>.dms --log build.log
-```
-`--log` uses `tee` internally, so you see output in real time and get a full
-record on disk. Useful for diagnosing slow or failing builds after the fact.
+| Script | Purpose |
+|---|---|
+| `./install.sh` | One-time setup: venv, dependencies, MCP registration |
+| `./build_all.sh` | Rebuild DB from a Claude.ai export (run after each new export) |
+| `./run_server.sh` | Start the MCP server manually (smoke check outside Claude Code) |
 
-**Run the MCP server manually** (for a quick smoke check outside Claude Code):
 ```bash
-cd context_bridge
-./run_server.sh
-```
-(This is also what `install.sh` registers as the `context-bridge` MCP server —
-no separate setup needed once the venv/deps exist.)
-
-**Sanity-check ingest/parsing only** (no embedding, no DB write — just see
-what the export produces):
-```bash
-cd context_bridge
-python3 ingest.py            # defaults to ./data/inspect
+./build_all.sh --help       # full options + steps
+./install.sh --help         # prerequisites + what the wizard does
 ```
 
-**Run the retrieval/smoke tests**:
+**Tests and standalone scripts:**
 ```bash
-cd context_bridge
-python3 smoke_test.py
-python3 retrieval_smoke_test.py
-python3 mcp_smoke_test.py
-```
-
-**Refresh the DB from new Claude Code sessions** (incremental — safe to re-run
-any time; skips already-ingested sessions):
-```bash
-cd context_bridge
-python3 ingest_code_sessions.py
+python3 tests/smoke_test.py           # validate ingest/parse stage (no DB)
+python3 tests/retrieval_smoke_test.py # end-to-end retrieval quality
+python3 tests/mcp_smoke_test.py       # MCP tool call smoke check
+python3 tests/test_build_db.py        # build_db unit tests
+bash tests/check_docs.sh              # structural lint (versions, file paths)
+python3 ingest_code_sessions.py       # incremental Claude Code session ingest
+python3 ingest.py                     # parse-only, no embedding (dry-run check)
 ```
 
 ## How the MCP server is actually used

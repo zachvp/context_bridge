@@ -1,22 +1,38 @@
 #!/usr/bin/env bash
-# Full DB rebuild: Claude.ai export first, then Code sessions on top.
-# Always run in this order — build_db.py replaces the DB file entirely,
-# so ingest_code_sessions.py must run after it or its data is wiped.
-#
-# Usage:
-#   ./build_all.sh                              # data/inspect/ already populated
-#   ./build_all.sh path/to/export.dms           # unpack from export file, then rebuild
-#   ./build_all.sh path/to/export.zip           # same, already renamed
-#   ./build_all.sh --log build.log [export]     # tee all output to a log file
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# --- Parse --log option ---
+usage() {
+    cat <<EOF
+Usage: ./build_all.sh [--log FILE] [-h] [EXPORT]
+
+Rebuild chat_memory.db from a Claude.ai export and Claude Code sessions.
+
+Arguments:
+  EXPORT        Path to a .dms or .zip Claude.ai export file.
+                Omit if data/inspect/ is already populated.
+
+Options:
+  --log FILE    Tee all output to FILE (printed live and saved to disk).
+  -h, --help    Show this message and exit.
+
+Steps run in order:
+  1. Unpack EXPORT to data/inspect/  (skipped if no EXPORT given)
+  2. python3 build_db.py             (Claude.ai export -> DB)
+  3. python3 ingest_code_sessions.py (Claude Code sessions -> DB, incremental)
+
+Always run in this order — build_db.py replaces the DB file entirely, so
+ingest_code_sessions.py must follow it or its data is wiped.
+EOF
+}
+
+# --- Parse options ---
 LOG_FILE=""
 POSITIONAL_ARGS=()
 while [[ $# -gt 0 ]]; do
     case "$1" in
+        -h|--help) usage; exit 0 ;;
         --log)
             if [[ $# -lt 2 || -z "$2" ]]; then
                 echo "Error: --log requires a file path" >&2

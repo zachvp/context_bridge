@@ -5,6 +5,30 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 SERVER_CMD="$SCRIPT_DIR/run_server.sh"
 VENV_DIR="$SCRIPT_DIR/.venv"
 
+usage() {
+    cat <<EOF
+Usage: ./install.sh [-h]
+
+Interactive setup wizard. Guides you through:
+  - Registering context-bridge as an MCP server in Claude Code
+  - Creating a Python virtual environment at .venv/
+  - Installing dependencies from requirements.txt
+  - Writing .env with your database path
+
+Run once after cloning. Re-run to update the MCP registration or change settings.
+
+Options:
+  -h, --help    Show this message and exit.
+
+Prerequisites:
+  - Python 3.13+     (python3 --version)
+  - Claude Code CLI  (claude --version)
+  - unzip            (unzip --version)
+EOF
+}
+
+[[ "${1:-}" == "-h" || "${1:-}" == "--help" ]] && { usage; exit 0; }
+
 echo "Context Bridge Setup"
 echo "===================="
 echo ""
@@ -95,12 +119,10 @@ echo "Done! Next steps:"
 echo ""
 echo "  1. Export your Claude.ai data:"
 echo "     Claude.ai → Settings → Account → Export Data"
-echo "     Anthropic emails a .dms file — it's a ZIP; rename it to .zip."
+echo "     Anthropic emails a .dms file within a few minutes."
 echo ""
 echo "  2. Build the database:"
-echo "     cd $SCRIPT_DIR"
-echo "     mkdir -p data/inspect"
-echo "     unzip data/chat-archive-<date>.zip -d data/inspect"
-echo "     python3 build_db.py"
+echo "     ./build_all.sh path/to/export.dms"
+echo "     (run ./build_all.sh --help for full options)"
 echo ""
 echo "  3. Restart Claude Code for the MCP server to take effect."
