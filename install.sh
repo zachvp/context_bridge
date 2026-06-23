@@ -28,6 +28,27 @@ EOF
 
 [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]] && { usage; exit 0; }
 
+# --- Prerequisites ---
+PYTHON_OK=0
+PY_VERSION=$(python3 -c 'import sys; print(f"{sys.version_info.major}.{sys.version_info.minor}")' 2>/dev/null || echo "0.0")
+PY_MAJOR=$(echo "$PY_VERSION" | cut -d. -f1)
+PY_MINOR=$(echo "$PY_VERSION" | cut -d. -f2)
+if [[ "$PY_MAJOR" -gt 3 || ( "$PY_MAJOR" -eq 3 && "$PY_MINOR" -ge 13 ) ]]; then
+    PYTHON_OK=1
+fi
+
+if [[ "$PYTHON_OK" -eq 0 ]]; then
+    echo "Error: Python 3.13+ required (found: ${PY_VERSION:-none})."
+    echo "  Install from https://python.org or via your system package manager."
+    exit 1
+fi
+
+if ! command -v claude &> /dev/null; then
+    echo "Error: Claude Code CLI not found."
+    echo "  Install from https://claude.ai/code and make sure 'claude' is on your PATH."
+    exit 1
+fi
+
 echo "Context Bridge Setup"
 echo "===================="
 echo ""
