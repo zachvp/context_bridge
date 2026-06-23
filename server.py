@@ -21,9 +21,9 @@ mcp = FastMCP("context-bridge")
 
 @mcp.tool()
 def search_chat_history(query_text: str, top_k: int = 5) -> list[dict]:
-    """Search past Claude.ai conversations and project docs for relevant
-    context. Use this to check whether a topic, decision, or concept has
-    already been discussed before re-deriving it from scratch.
+    """Search past AI conversations and project docs for relevant context.
+    Use this to check whether a topic, decision, or concept has already been
+    discussed before re-deriving it from scratch.
 
     Args:
         query_text: what to search for, in natural language.

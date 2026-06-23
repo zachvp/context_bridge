@@ -19,7 +19,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-from common import Document
+from common import Document, SOURCE_CLAUDE_AI
 from embed import embed_documents, MODEL_NAME
 from ingest import build_documents
 
@@ -70,7 +70,7 @@ def _merge_surviving(old_db_path: Path, new_conn: sqlite3.Connection, covered_uu
 
         rows = old_conn.execute(
             "SELECT id, text, source_type, title, timestamp, embedding, source, project "
-            "FROM chunks WHERE source = 'claude_ai'"
+            "FROM chunks WHERE source = ?", (SOURCE_CLAUDE_AI,)
         ).fetchall()
     finally:
         old_conn.close()
@@ -151,7 +151,7 @@ def main(export_dir: Path, db_path: Path) -> None:
 
     # Owner UUID is the first colon-delimited segment of every claude_ai chunk ID.
     # "memories" is always re-emitted by a fresh export; don't merge the old one.
-    covered_uuids = {d.id.split(":")[0] for d in docs if d.source == "claude_ai"}
+    covered_uuids = {d.id.split(":")[0] for d in docs if d.source == SOURCE_CLAUDE_AI}
     covered_uuids.add("memories")
 
     print(f"embedding {len(docs)} docs with {MODEL_NAME}...")

@@ -33,15 +33,17 @@ from common import (
     WINDOW_CHARS,
     OVERLAP_TURNS,
     MAX_CHUNK_CHARS,
+    SOURCE_CLAUDE_AI,
+    SOURCE_CLAUDE_CODE,
 )
 
-SESSIONS_DIR = Path.home() / ".claude" / "projects"
+DEFAULT_SESSIONS_DIR = Path.home() / ".claude" / "projects"
 MTIME_GRACE = 60  # skip files written within the last N seconds (may be mid-write)
 
-MIGRATE_SQL = """
+MIGRATE_SQL = f"""
 CREATE TABLE IF NOT EXISTS sessions (
     session_uuid  TEXT NOT NULL,
-    source        TEXT NOT NULL DEFAULT 'claude_code',
+    source        TEXT NOT NULL DEFAULT '{SOURCE_CLAUDE_CODE}',
     file_mtime    REAL NOT NULL,
     ingested_at   TEXT NOT NULL,
     PRIMARY KEY (session_uuid, source)
@@ -54,20 +56,20 @@ def ensure_schema(conn: sqlite3.Connection) -> None:
     conn.executescript(MIGRATE_SQL)
     existing = {row[1] for row in conn.execute("PRAGMA table_info(chunks)")}
     if "source" not in existing:
-        conn.execute("ALTER TABLE chunks ADD COLUMN source TEXT NOT NULL DEFAULT 'claude_ai'")
+        conn.execute(f"ALTER TABLE chunks ADD COLUMN source TEXT NOT NULL DEFAULT '{SOURCE_CLAUDE_AI}'")
     if "project" not in existing:
         conn.execute("ALTER TABLE chunks ADD COLUMN project TEXT")
     # Migrate pre-source sessions tables (single-column PK → add discriminator column)
     session_cols = {row[1] for row in conn.execute("PRAGMA table_info(sessions)")}
     if "source" not in session_cols:
-        conn.execute("ALTER TABLE sessions ADD COLUMN source TEXT NOT NULL DEFAULT 'claude_code'")
+        conn.execute(f"ALTER TABLE sessions ADD COLUMN source TEXT NOT NULL DEFAULT '{SOURCE_CLAUDE_CODE}'")
     conn.commit()
 
 
 def load_ingested(conn: sqlite3.Connection) -> dict[str, float]:
     """Return {session_uuid: file_mtime} for every already-ingested claude_code session."""
     rows = conn.execute(
-        "SELECT session_uuid, file_mtime FROM sessions WHERE source = 'claude_code'"
+        "SELECT session_uuid, file_mtime FROM sessions WHERE source = ?", (SOURCE_CLAUDE_CODE,)
     ).fetchall()
     return {r[0]: r[1] for r in rows}
 
@@ -238,7 +240,7 @@ def session_to_documents(
                     source_type="code_session",
                     title=title,
                     timestamp=window[-1].timestamp,
-                    source="claude_code",
+                    source=SOURCE_CLAUDE_CODE,
                     project=project,
                 )
             )
@@ -275,7 +277,7 @@ def upsert_session(
         "INSERT OR REPLACE INTO sessions (session_uuid, source, file_mtime, ingested_at) VALUES (?, ?, ?, ?)",
         (
             session_uuid,
-            "claude_code",
+            SOURCE_CLAUDE_CODE,
             file_mtime,
             datetime.now(timezone.utc).isoformat(),
         ),
@@ -283,13 +285,13 @@ def upsert_session(
     conn.commit()
 
 
-def main(db_path: Path, pruned_out=None) -> None:
+def main(db_path: Path, sessions_dir: Path, pruned_out=None) -> None:
     now = time.time()
     conn = sqlite3.connect(db_path)
     ensure_schema(conn)
     ingested = load_ingested(conn)
 
-    session_files = list(SESSIONS_DIR.glob("*/*.jsonl"))
+    session_files = list(sessions_dir.glob("*/*.jsonl"))
     print(f"found {len(session_files)} session files")
 
     new_count = updated_count = skipped_count = 0
@@ -356,6 +358,11 @@ if __name__ == "__main__":
         default=os.environ.get("CONTEXT_BRIDGE_DB_PATH") or str(Path(__file__).parent / "chat_memory.db"),
     )
     parser.add_argument(
+        "--sessions-dir",
+        default=str(DEFAULT_SESSIONS_DIR),
+        help="directory containing session JSONL files (default: ~/.claude/projects)",
+    )
+    parser.add_argument(
         "--pruned-out",
         default=None,
         help="file to write pruned branch records as JSONL (omit to discard)",
@@ -373,7 +380,7 @@ if __name__ == "__main__":
             )
             sys.exit(1)
     try:
-        main(Path(args.db), pruned_out)
+        main(Path(args.db), Path(args.sessions_dir).expanduser(), pruned_out)
     finally:
         if pruned_out:
             pruned_out.close()

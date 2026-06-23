@@ -7,6 +7,10 @@ WINDOW_CHARS = 1_500
 OVERLAP_TURNS = 1
 MAX_CHUNK_CHARS = 1_800
 
+# Source identifiers — add new values here when supporting additional AI tools.
+SOURCE_CLAUDE_AI = "claude_ai"
+SOURCE_CLAUDE_CODE = "claude_code"
+
 
 @dataclass
 class Document:
@@ -15,7 +19,7 @@ class Document:
     source_type: str
     title: str
     timestamp: str
-    source: str = "claude_ai"  # override per-source; "claude_ai" is the export default
+    source: str = SOURCE_CLAUDE_AI
     project: str | None = None
 
 
