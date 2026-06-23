@@ -1,5 +1,9 @@
 # Context Bridge — operating doc
 
+> **Status: beta.** Core search and ingestion are stable. Phase 3
+> (project-local retrieval) is not yet implemented — see the retrieval
+> limitation note below and `PLAN.md` for the roadmap.
+
 See `PLAN.md` for the original design rationale. This file is the practical
 "how do I actually run this" companion.
 
@@ -23,6 +27,12 @@ writes a `.env` file for local config.
 
 Edit `.env` directly to change these after initial setup. See `.env.example` for
 the template.
+
+**Changing the embedding model:** set `CONTEXT_BRIDGE_MODEL` to a different
+HuggingFace sentence-transformers model ID, then run a **full rebuild** with your
+complete Claude.ai export — `build_db.py` detects the model mismatch and skips
+the partial-export merge to avoid mixing incompatible vectors. Partial exports
+are safe again after the first full rebuild with the new model.
 
 ## Getting your Claude.ai export
 
@@ -111,6 +121,33 @@ A query from a `sol_reason` session ranks `sol_reason` sessions no higher than
 sessions from `synesthesia`, `djmgmt`, or any other project. This is the Phase 3
 gap (`current_project` parameter — see `PLAN.md`). Until Phase 3 is implemented,
 cross-project noise is a known retrieval quality ceiling.
+
+## Troubleshooting / FAQ
+
+**The model download hangs or fails.**
+HuggingFace downloads `~440 MB` on first run. If it times out, set
+`HF_HUB_OFFLINE=1` and re-run after the model is cached, or check your network.
+The cache lives at `~/.cache/huggingface/`.
+
+**`build_all.sh` says "OOM" or crashes during embedding.**
+Reduce `CONTEXT_BRIDGE_BATCH_SIZE` in `.env` (try `16` or `8`) and re-run.
+
+**The MCP server isn't appearing in Claude Code.**
+Run `claude mcp list` to verify registration, then restart Claude Code — the
+server list is read at session start. If it's missing, re-run `./install.sh`.
+
+**`search_chat_history` returns nothing (or only irrelevant results).**
+Run `./build_all.sh` first — the server needs a built `chat_memory.db`. If the
+DB exists, try a more descriptive phrase ("what did we decide about X") rather
+than a single keyword.
+
+**Claude Code sessions aren't appearing in search.**
+Run `python3 ingest_code_sessions.py` to ingest the latest sessions, then
+restart the MCP server. This step is separate from the Claude.ai export build.
+
+**I changed the embedding model and now search is broken.**
+See the "Changing the embedding model" note under Configuration above. A full
+rebuild with a complete Claude.ai export is required.
 
 ## Notes / known constraints
 - Export is manual, pull-only (Claude.ai Settings → Account → Export Data) —
