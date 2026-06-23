@@ -15,9 +15,10 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /context_bridge
 COPY . .
 
-RUN pip install --no-cache-dir -r requirements.txt
-RUN pip install --no-cache-dir pytest pytest-asyncio
+RUN python3 -m venv .venv \
+    && .venv/bin/pip install --no-cache-dir -r requirements.txt \
+    && .venv/bin/pip install --no-cache-dir pytest pytest-asyncio
 
 ENV PYTHONPATH=/context_bridge
 
-CMD ["bash", "-c", "bash tests/test_install.sh && python -m pytest tests/ -v --tb=short"]
+CMD ["bash", "-c", "bash tests/test_install.sh && .venv/bin/python -m pytest tests/ -v --tb=short"]

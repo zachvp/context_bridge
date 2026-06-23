@@ -1,0 +1,11 @@
+.venv/
+.env
+data/
+.claude/
+.inspect/
+*.pyc
+__pycache__/
+*.log
+chat_memory.db
+.git/
+.pytest_cache/
