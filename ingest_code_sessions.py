@@ -25,12 +25,9 @@ from pathlib import Path
 import numpy as np
 
 from embed import embed_documents
-from common import Document, Turn, chunk_turns, split_oversized
+from common import Document, Turn, chunk_turns, split_oversized, WINDOW_CHARS, OVERLAP_TURNS, MAX_CHUNK_CHARS
 
 SESSIONS_DIR = Path.home() / ".claude" / "projects"
-WINDOW_CHARS = 2_500
-OVERLAP_TURNS = 1
-MAX_CHUNK_CHARS = 5_000
 MTIME_GRACE = 60  # skip files written within the last N seconds (may be mid-write)
 
 MIGRATE_SQL = """

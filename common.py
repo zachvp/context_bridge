@@ -3,6 +3,10 @@
 
 from dataclasses import dataclass
 
+WINDOW_CHARS = 1_500
+OVERLAP_TURNS = 1
+MAX_CHUNK_CHARS = 1_800
+
 
 @dataclass
 class Document:
