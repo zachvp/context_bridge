@@ -28,8 +28,7 @@ There is no API for this — the export is pull-only, triggered manually:
 
 1. Go to **Claude.ai → Settings → Account → Export Data**
 2. Anthropic emails you a `.dms` file attachment (has been a few minutes in my exp)
-3. `.dms` is a ZIP archive with a non-standard extension — rename it to `.zip`
-4. Unzip into `data/inspect/` and build the DB (see command cheat sheet below)
+3. Run `./build_all.sh path/to/export.dms` — it handles the rename, unpack, and rebuild
 
 ## Abstract overview
 
@@ -62,10 +61,10 @@ from the DB on rebuild.
 you pull a new Claude.ai export):
 ```bash
 cd context_bridge
-rm -rf data/inspect
-unzip -q data/chat-archive-<date>.zip -d data/inspect
-python3 build_db.py
+./build_all.sh data/chat-archive-<date>.dms
 ```
+Pass the export file (`.dms` or `.zip`) and `build_all.sh` handles the unpack
+step automatically. Omit the argument if `data/inspect/` is already populated.
 
 **Run the MCP server manually** (for a quick smoke check outside Claude Code):
 ```bash
