@@ -23,7 +23,6 @@ Options:
 Prerequisites:
   - Python 3.13+     (python3 --version)
   - Claude Code CLI  (claude --version)
-  - unzip            (unzip --version)
 EOF
 }
 

@@ -18,7 +18,7 @@ Options:
   -h, --help    Show this message and exit.
 
 Steps run in order:
-  1. Unpack EXPORT to data/inspect/  (skipped if no EXPORT given)
+  1. Unpack EXPORT to data/inspect/ via python3 -m zipfile  (skipped if no EXPORT given)
   2. python3 build_db.py             (Claude.ai export -> DB)
   3. python3 ingest_code_sessions.py (Claude Code sessions -> DB, incremental)
 
@@ -91,7 +91,7 @@ if [ $# -ge 1 ] && [ -n "$1" ]; then
     echo "=== Step 0: Unpacking export ==="
     rm -rf "$SCRIPT_DIR/data/inspect"
     mkdir -p "$SCRIPT_DIR/data/inspect"
-    unzip -q "$EXPORT_FILE" -d "$SCRIPT_DIR/data/inspect"
+    python3 -m zipfile -e "$EXPORT_FILE" "$SCRIPT_DIR/data/inspect"
     echo "  Unpacked to data/inspect/"
     echo ""
 

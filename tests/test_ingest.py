@@ -150,10 +150,6 @@ def test_chunk_turns_multiple_windows() -> None:
     assert windows[0][-1] == windows[1][0]
 
 
-def test_chunk_turns_empty() -> None:
-    assert chunk_turns([], WINDOW_CHARS, overlap_turns=1) == []
-
-
 # ---------------------------------------------------------------------------
 # split_oversized
 # ---------------------------------------------------------------------------

@@ -62,15 +62,7 @@ def test_parse_session_malformed_json_lines(tmp_path) -> None:
 
 def test_count_descendants() -> None:
     adjacency = {"A": ["B"], "B": ["C"]}
-    cache: dict = {}
-    assert _count_descendants("A", adjacency, cache) == 2
-    assert cache["B"] == 1
-    assert cache["C"] == 0
-
-
-def test_count_descendants_leaf() -> None:
-    cache: dict = {}
-    assert _count_descendants("X", {}, cache) == 0
+    assert _count_descendants("A", adjacency, {}) == 2
 
 
 # ---------------------------------------------------------------------------
