@@ -1,0 +1,8 @@
+__pycache__
+*.pyc
+*.tmp
+chat_memory.db
+.inspect/
+.env
+*.zip
+*.log

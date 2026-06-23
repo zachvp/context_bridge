@@ -1,0 +1,9 @@
+data/
+.venv/
+.claude/
+.inspect/
+*.pyc
+__pycache__/
+*.log
+chat_memory.db
+.env
