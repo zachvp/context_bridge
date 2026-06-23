@@ -7,7 +7,7 @@ VENV_DIR="$SCRIPT_DIR/.venv"
 
 usage() {
     cat <<EOF
-Usage: ./install.sh [-h]
+Usage: ./wizard.sh [-h]
 
 Interactive setup wizard. Guides you through:
   - Registering context-bridge as an MCP server in Claude Code

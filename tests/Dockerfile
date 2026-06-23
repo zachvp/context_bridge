@@ -23,4 +23,4 @@ COPY . .
 
 ENV PYTHONPATH=/context_bridge
 
-CMD ["bash", "-c", "bash tests/test_install.sh && .venv/bin/python -m pytest tests/ -v --tb=short"]
+CMD ["bash", "-c", "bash tests/test_wizard.sh && .venv/bin/python -m pytest tests/ -v --tb=short"]

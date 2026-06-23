@@ -22,12 +22,12 @@ check() {
 # ---------------------------------------------------------------------------
 echo ""
 echo "=== Static analysis ==="
-check "bash -n install.sh"    bash -n install.sh
+check "bash -n wizard.sh"    bash -n wizard.sh
 check "bash -n run_server.sh" bash -n run_server.sh
 check "bash -n build_all.sh"  bash -n build_all.sh
 
 if command -v shellcheck > /dev/null 2>&1; then
-    check "shellcheck install.sh"    shellcheck install.sh
+    check "shellcheck wizard.sh"    shellcheck wizard.sh
     check "shellcheck run_server.sh" shellcheck run_server.sh
     check "shellcheck build_all.sh"  shellcheck build_all.sh
 else
@@ -87,16 +87,16 @@ EOF
 
 # ---------------------------------------------------------------------------
 echo ""
-echo "=== MCP registration (install.sh) ==="
+echo "=== MCP registration (wizard.sh) ==="
 # Feed: scope (1=global), overwrite-if-exists (y), DB path (1=default).
 # "y" for DB choice falls through to default when context-bridge isn't
 # pre-registered (no overwrite prompt), so this input works either way.
-if printf "1\ny\n1\n" | bash install.sh > /tmp/install_out.txt 2>&1; then
+if printf "1\ny\n1\n" | bash wizard.sh > /tmp/install_out.txt 2>&1; then
     check "context-bridge registered" claude mcp get context-bridge
 else
     # claude mcp add may require auth in a headless container — show output and skip
     echo ""
-    echo "  install.sh output:"
+    echo "  wizard.sh output:"
     sed 's/^/    /' /tmp/install_out.txt
     skip "MCP registration (claude CLI not authenticated)"
 fi
@@ -105,7 +105,7 @@ fi
 if [ -f .env ]; then
     check ".env contains DB path" grep -q "CONTEXT_BRIDGE_DB_PATH" .env
 else
-    fail ".env not created by install.sh"
+    fail ".env not created by wizard.sh"
 fi
 
 # ---------------------------------------------------------------------------

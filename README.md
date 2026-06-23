@@ -1,16 +1,10 @@
-# Context Bridge — operating doc
-
-> **Status: beta.** Core search and ingestion are stable. Phase 3
-> (project-local retrieval) is not yet implemented — see the retrieval
-> limitation note below and `PLAN.md` for the roadmap.
-
-See `PLAN.md` for the original design rationale. This file is the practical
-"how do I actually run this" companion.
+# Context Bridge
+This file is the practical "how do I actually run this" companion.
+See `PLAN.md` for the original design rationale and vague roadmap. 
 
 ## Installation
-
 ```bash
-bash install.sh
+bash wizard.sh
 ```
 
 The wizard creates a `.venv`, installs dependencies, registers the MCP server
@@ -76,13 +70,13 @@ Each shell script accepts `--help` for full usage and options. Quick reference:
 
 | Script | Purpose |
 |---|---|
-| `./install.sh` | One-time setup: venv, dependencies, MCP registration |
+| `./wizard.sh` | One-time setup: venv, dependencies, MCP registration |
 | `./build_all.sh` | Rebuild DB from a Claude.ai export (run after each new export) |
 | `./run_server.sh` | Start the MCP server manually (smoke check outside Claude Code) |
 
 ```bash
 ./build_all.sh --help       # full options + steps
-./install.sh --help         # prerequisites + what the wizard does
+./wizard.sh --help         # prerequisites + what the wizard does
 ```
 
 **Tests and standalone scripts:**
@@ -134,7 +128,7 @@ Reduce `CONTEXT_BRIDGE_BATCH_SIZE` in `.env` (try `16` or `8`) and re-run.
 
 **The MCP server isn't appearing in Claude Code.**
 Run `claude mcp list` to verify registration, then restart Claude Code — the
-server list is read at session start. If it's missing, re-run `./install.sh`.
+server list is read at session start. If it's missing, re-run `./wizard.sh`.
 
 **`search_chat_history` returns nothing (or only irrelevant results).**
 Run `./build_all.sh` first — the server needs a built `chat_memory.db`. If the

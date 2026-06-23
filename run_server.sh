@@ -7,7 +7,7 @@ usage() {
 Usage: ./run_server.sh [-h]
 
 Start the context-bridge MCP server (stdio transport).
-Registered automatically by install.sh — use this for manual smoke checks
+Registered automatically by wizard.sh — use this for manual smoke checks
 outside of a Claude Code session.
 
 Options:
@@ -38,7 +38,7 @@ fi
 # the MCP runtime, which surfaces errors poorly over stdio.
 if ! "$PYTHON" -c "import mcp, sentence_transformers, numpy" 2>/dev/null; then
     echo "Error: required Python packages not found." >&2
-    echo "Run: $SCRIPT_DIR/install.sh" >&2
+    echo "Run: $SCRIPT_DIR/wizard.sh" >&2
     exit 1
 fi
 
