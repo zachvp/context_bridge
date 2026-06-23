@@ -16,6 +16,7 @@ import argparse
 import json
 import os
 import sqlite3
+import sys
 import time
 from collections import defaultdict
 from datetime import datetime, timezone
@@ -291,8 +292,18 @@ def main(db_path: Path, pruned_out=None) -> None:
             skipped_count += 1
             continue
 
-        nodes, adjacency, root_uuid, title, cwd = parse_session(path)
-        if root_uuid is None or not nodes:
+        try:
+            nodes, adjacency, root_uuid, title, cwd = parse_session(path)
+        except OSError as e:
+            print(f"  warning: skipping {path.name} — {e}", file=sys.stderr)
+            skipped_count += 1
+            continue
+
+        if not nodes:
+            skipped_count += 1
+            continue
+        if root_uuid is None:
+            print(f"  warning: skipping {path.name} — no root message found (malformed session)", file=sys.stderr)
             skipped_count += 1
             continue
 
@@ -331,7 +342,13 @@ if __name__ == "__main__":
     )
     args = parser.parse_args()
 
-    pruned_out = open(args.pruned_out, "w") if args.pruned_out else None
+    pruned_out = None
+    if args.pruned_out:
+        try:
+            pruned_out = open(args.pruned_out, "w")
+        except OSError as e:
+            print(f"Error: cannot open --pruned-out {args.pruned_out!r}: {e}", file=sys.stderr)
+            sys.exit(1)
     try:
         main(Path(args.db), pruned_out)
     finally:

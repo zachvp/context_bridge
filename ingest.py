@@ -84,7 +84,13 @@ def build_documents(export_dir: Path) -> tuple[list[Document], int, int]:
 
     # --- conversations.json: list of conversation objects ---
     conversations_path = export_dir / "conversations.json"
-    conversations = json.loads(conversations_path.read_text())
+    try:
+        conversations = json.loads(conversations_path.read_text())
+    except FileNotFoundError:
+        raise FileNotFoundError(
+            f"conversations.json not found in {export_dir}. "
+            "Pass the unpacked export directory, or provide the .dms/.zip path to build_all.sh."
+        ) from None
 
     skipped = 0
     for conv in conversations:

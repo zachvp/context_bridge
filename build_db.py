@@ -14,6 +14,7 @@ Usage:
 import argparse
 import os
 import sqlite3
+import sys
 import time
 from datetime import datetime, timezone
 from pathlib import Path
@@ -61,7 +62,8 @@ def _merge_surviving(old_db_path: Path, new_conn: sqlite3.Connection, covered_uu
             print(
                 f"  warning: old DB used model {row[0] if row else '(none)'!r}, "
                 f"current is {MODEL_NAME!r} — skipping merge. "
-                "Run with a full export to rebuild from scratch."
+                "Run with a full export to rebuild from scratch.",
+                file=sys.stderr,
             )
             return 0
 
@@ -131,6 +133,8 @@ def write_db(
 
 
 def main(export_dir: Path, db_path: Path) -> None:
+    print(f"export_dir: {export_dir.resolve()}")
+    print(f"db_path:    {db_path.resolve()}")
     print("parsing/chunking sources...")
     docs = _collect_docs(export_dir)
     print(f"  total: {len(docs)} docs")

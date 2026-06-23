@@ -69,6 +69,13 @@ cd context_bridge
 Pass the export file (`.dms` or `.zip`) and `build_all.sh` handles the unpack
 step automatically. Omit the argument if `data/inspect/` is already populated.
 
+**Log all output to a file** (stdout + stderr, also printed to terminal):
+```bash
+./build_all.sh data/chat-archive-<date>.dms --log build.log
+```
+`--log` uses `tee` internally, so you see output in real time and get a full
+record on disk. Useful for diagnosing slow or failing builds after the fact.
+
 **Run the MCP server manually** (for a quick smoke check outside Claude Code):
 ```bash
 cd context_bridge

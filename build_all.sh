@@ -4,12 +4,38 @@
 # so ingest_code_sessions.py must run after it or its data is wiped.
 #
 # Usage:
-#   ./build_all.sh                        # data/inspect/ already populated
-#   ./build_all.sh path/to/export.dms     # unpack from export file, then rebuild
-#   ./build_all.sh path/to/export.zip     # same, already renamed
+#   ./build_all.sh                              # data/inspect/ already populated
+#   ./build_all.sh path/to/export.dms           # unpack from export file, then rebuild
+#   ./build_all.sh path/to/export.zip           # same, already renamed
+#   ./build_all.sh --log build.log [export]     # tee all output to a log file
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# --- Parse --log option ---
+LOG_FILE=""
+POSITIONAL_ARGS=()
+while [[ $# -gt 0 ]]; do
+    case "$1" in
+        --log)
+            if [[ $# -lt 2 || -z "$2" ]]; then
+                echo "Error: --log requires a file path" >&2
+                exit 1
+            fi
+            LOG_FILE="$2"
+            shift 2
+            ;;
+        *) POSITIONAL_ARGS+=("$1"); shift ;;
+    esac
+done
+set -- "${POSITIONAL_ARGS[@]+"${POSITIONAL_ARGS[@]}"}"
+
+if [[ -n "$LOG_FILE" ]]; then
+    exec > >(tee "$LOG_FILE") 2>&1
+fi
+
+# Report which step failed on any error exit.
+trap 'echo "" >&2; echo "Error: build_all.sh failed at line $LINENO (exit $?)" >&2' ERR
 
 # Load .env if present (sets CONTEXT_BRIDGE_DB_PATH etc.)
 if [ -f "$SCRIPT_DIR/.env" ]; then
