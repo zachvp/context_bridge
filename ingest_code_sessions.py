@@ -114,13 +114,24 @@ def parse_session(path: Path) -> tuple[dict, dict, str | None, str, str | None]:
     return nodes, dict(adjacency), root_uuid, title, cwd
 
 
-def _count_descendants(uuid: str, adjacency: dict, cache: dict) -> int:
-    if uuid in cache:
-        return cache[uuid]
-    children = adjacency.get(uuid, [])
-    total = len(children) + sum(_count_descendants(c, adjacency, cache) for c in children)
-    cache[uuid] = total
-    return total
+def _count_descendants(uuid: str, adjacency: dict, cache: dict, _visiting: None = None) -> int:
+    # Iterative post-order DFS — avoids recursion limit on deep trees and cycles.
+    stack = [uuid]
+    order = []
+    visited = set()
+    while stack:
+        node = stack.pop()
+        if node in cache or node in visited:
+            continue
+        visited.add(node)
+        order.append(node)
+        for child in adjacency.get(node, []):
+            if child not in cache and child not in visited:
+                stack.append(child)
+    for node in reversed(order):
+        children = adjacency.get(node, [])
+        cache[node] = len(children) + sum(cache.get(c, 0) for c in children)
+    return cache.get(uuid, 0)
 
 
 def walk_canonical(

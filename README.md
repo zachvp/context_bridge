@@ -48,12 +48,15 @@ data/inspect/                                 │
                Claude Code session, via "context-bridge" MCP
 ```
 
-`build_db.py` is a **full rebuild every time** — it has no incremental/upsert
-mode. Running it always parses the entire `data/inspect/` export, re-embeds
-everything, and atomically replaces `chat_memory.db`. There is currently no
-merge step for partial-window exports (e.g. a 90-day-only export) — always
-use a full export, never a partial one, or you'll silently drop older history
-from the DB on rebuild.
+`build_db.py` always parses the entire `data/inspect/` export and re-embeds
+everything, but before the atomic replace it merges back any `claude_ai`
+chunks from the previous DB whose conversation/project UUID is absent from the
+new export. This means a partial export (e.g. 90-day-only) is safe — older
+history that isn't in the new export is preserved from the old DB.
+
+**One exception:** if the embedding model changes between builds, the merge is
+skipped (mixing vectors from two models would corrupt search). In that case run
+`build_db.py` with a full export to get a clean rebuild.
 
 ## Command cheat sheet
 
