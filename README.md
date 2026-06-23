@@ -27,7 +27,7 @@ the template.
 There is no API for this — the export is pull-only, triggered manually:
 
 1. Go to **Claude.ai → Settings → Account → Export Data**
-2. Anthropic emails you a `.dms` file attachment (arrives within minutes)
+2. Anthropic emails you a `.dms` file attachment (has been a few minutes in my exp)
 3. `.dms` is a ZIP archive with a non-standard extension — rename it to `.zip`
 4. Unzip into `data/inspect/` and build the DB (see command cheat sheet below)
 
@@ -39,7 +39,7 @@ Claude.ai export (.zip)                ~/.claude/projects/**/*.jsonl
       ▼                                       │  (incremental, walk parentUuid tree)
 data/inspect/                                 │
       │  ingest.py + embed.py                 │
-      │  (full rebuild via build_db.py)        │
+      │  (full rebuild via build_db.py)       │
       └──────────────────┬────────────────────┘
                          ▼
                chat_memory.db   (SQLite — chunks + sessions + meta)
@@ -107,7 +107,7 @@ of the session, whether or not they're ever called.
 The current description is reactive — Claude calls `search_chat_history` when
 it notices it's about to re-derive something it suspects has been covered before.
 In a narrow coding task it may never fire; in a design or planning conversation
-it typically fires once or twice.
+it may fire more.
 
 **The most reliable pattern:** ask explicitly.
 > "Search the context bridge for [topic]."
