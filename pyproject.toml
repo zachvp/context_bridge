@@ -1,6 +1,15 @@
 [project]
 name = "context-bridge"
 version = "0.1.0"
+description = "Semantic search over your Claude conversation history, surfaced as an MCP server for Claude Code."
+readme = "README.md"
+license = {text = "MIT"}
+authors = [{name = "zachvp", email = "vegaperk@gmail.com"}]
+requires-python = ">=3.13"
+
+[project.urls]
+Repository = "https://github.com/zachvp/context_bridge"
+Issues = "https://github.com/zachvp/context_bridge/issues"
 
 [project.optional-dependencies]
 dev = ["pytest>=8.0", "pytest-asyncio>=0.24"]
