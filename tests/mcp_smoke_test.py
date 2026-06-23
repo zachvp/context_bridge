@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# manual-only: requires populated chat_memory.db and spawns server.py subprocess
 """
 Local MCP smoke test (beat 6). Spawns server.py as a real MCP server process
 over stdio and talks to it with the official MCP client — verifying the

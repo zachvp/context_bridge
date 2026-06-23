@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# manual-only: requires real data/inspect/ export archive (gitignored)
 """
 Smoke test for the parse/chunk stage (ingest.build_documents). Runs against
 the real unzipped export and asserts the structural invariants we've been

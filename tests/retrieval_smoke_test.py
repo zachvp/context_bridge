@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# manual-only: requires populated chat_memory.db (gitignored)
 """
 Retrieval quality smoke test (beat 4). Unlike smoke_test.py (structural
 invariants on the parse/chunk stage), this is inherently fuzzy — semantic

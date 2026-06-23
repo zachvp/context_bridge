@@ -39,22 +39,27 @@ check "run_server.sh --help" bash run_server.sh --help
 # ---------------------------------------------------------------------------
 echo ""
 echo "=== Test files exist ==="
-check "tests/smoke_test.py"           test -f tests/smoke_test.py
-check "tests/retrieval_smoke_test.py" test -f tests/retrieval_smoke_test.py
-check "tests/mcp_smoke_test.py"       test -f tests/mcp_smoke_test.py
-check "tests/test_build_db.py"        test -f tests/test_build_db.py
-check "tests/test_install.sh"         test -f tests/test_install.sh
-check "tests/check_docs.sh"           test -f tests/check_docs.sh
+check "tests/smoke_test.py"                test -f tests/smoke_test.py
+check "tests/retrieval_smoke_test.py"      test -f tests/retrieval_smoke_test.py
+check "tests/mcp_smoke_test.py"            test -f tests/mcp_smoke_test.py
+check "tests/test_build_db.py"             test -f tests/test_build_db.py
+check "tests/test_ingest.py"               test -f tests/test_ingest.py
+check "tests/test_ingest_code_sessions.py" test -f tests/test_ingest_code_sessions.py
+check "tests/conftest.py"                  test -f tests/conftest.py
+check "tests/test_install.sh"              test -f tests/test_install.sh
+check "tests/check_docs.sh"               test -f tests/check_docs.sh
 
 # ---------------------------------------------------------------------------
 echo ""
 echo "=== Required project files ==="
-check "requirements.txt"  test -f requirements.txt
-check ".env.example"      test -f .env.example
-check "schema.sql"        test -f schema.sql
-check "build_all.sh"      test -f build_all.sh
-check "install.sh"        test -f install.sh
-check "run_server.sh"     test -f run_server.sh
+check "requirements.txt"               test -f requirements.txt
+check "pyproject.toml"                 test -f pyproject.toml
+check ".env.example"                   test -f .env.example
+check "schema.sql"                     test -f schema.sql
+check "build_all.sh"                   test -f build_all.sh
+check "install.sh"                     test -f install.sh
+check "run_server.sh"                  test -f run_server.sh
+check ".github/workflows/ci.yml"       test -f .github/workflows/ci.yml
 
 # ---------------------------------------------------------------------------
 echo ""

@@ -16,7 +16,8 @@ WORKDIR /context_bridge
 COPY . .
 
 RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install --no-cache-dir pytest pytest-asyncio
 
 ENV PYTHONPATH=/context_bridge
 
-CMD ["bash", "tests/test_install.sh"]
+CMD ["bash", "-c", "bash tests/test_install.sh && python -m pytest tests/ -v --tb=short"]
