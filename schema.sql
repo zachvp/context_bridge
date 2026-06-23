@@ -1,4 +1,4 @@
--- chat_memory.db schema. Fully rebuilt on every pipeline run (see PLAN.md) —
+-- chat_memory.db schema. Applied fresh on every build_db.py run —
 -- no migrations needed, this file is just the shape of a fresh DB.
 
 CREATE TABLE chunks (
