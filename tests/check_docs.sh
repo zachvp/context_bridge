@@ -44,6 +44,7 @@ echo "=== Test files exist ==="
 check "tests/test_build_db.py"             test -f tests/test_build_db.py
 check "tests/test_ingest.py"               test -f tests/test_ingest.py
 check "tests/test_ingest_code_sessions.py" test -f tests/test_ingest_code_sessions.py
+check "tests/test_query.py"                test -f tests/test_query.py
 check "tests/conftest.py"                  test -f tests/conftest.py
 check "tests/test_wizard.sh"               test -f tests/test_wizard.sh
 check "tests/check_docs.sh"                test -f tests/check_docs.sh

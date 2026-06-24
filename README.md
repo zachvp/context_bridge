@@ -34,7 +34,7 @@ There is no API for this — the export is pull-only, triggered manually:
 
 1. Go to **Claude.ai → Settings → Account → Export Data**
 2. Anthropic emails you a `.dms` file attachment (has been a few minutes in my exp)
-3. Run `./scripts/build_all.sh path/to/export.dms` — it handles the rename, unpack, and rebuild
+3. Run `./scripts/build_all.sh path/to/export.dms` (or `.zip`) — it handles the rename, unpack, and rebuild
 
 ## Abstract overview
 
@@ -85,6 +85,7 @@ pytest                         # unit tests (ingest, query, build_db, code sessi
 bash tests/check_docs.sh       # structural lint (versions, file paths)
 python3 ingest_code_sessions.py  # incremental Claude Code session ingest
 python3 ingest.py              # parse-only, no embedding (dry-run check)
+python3 query.py "your query"  # ad-hoc CLI search (--top-k N, --db PATH)
 ```
 
 ## How the MCP server is actually used
@@ -136,13 +137,7 @@ Run `python3 ingest_code_sessions.py` to ingest the latest sessions, then
 restart the MCP server. This step is separate from the Claude.ai export build.
 
 **I changed the embedding model and now search is broken.**
-See the "Changing the embedding model" note under Configuration above. A full
-rebuild with a complete Claude.ai export is required.
+See "Changing the embedding model" under Configuration above.
 
 ## Notes / known constraints
-- Export is manual, pull-only (Claude.ai Settings → Account → Export Data) —
-  no API/webhook trigger.
-- `build_db.py` writes to a `.tmp` file and `os.replace`s it into place, so a
-  crash mid-rebuild never leaves a half-written `chat_memory.db` live.
-- `chat_memory.db` and `data/` are gitignored — they're local build
-  artifacts and data files, not committed.
+- `chat_memory.db` and `data/` are gitignored — local build artifacts, not committed.
