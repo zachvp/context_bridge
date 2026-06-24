@@ -81,13 +81,10 @@ Each shell script accepts `--help` for full usage and options. Quick reference:
 
 **Tests and standalone scripts:**
 ```bash
-python3 tests/smoke_test.py           # validate ingest/parse stage (no DB)
-python3 tests/retrieval_smoke_test.py # end-to-end retrieval quality
-python3 tests/mcp_smoke_test.py       # MCP tool call smoke check
-python3 tests/test_build_db.py        # build_db unit tests
-bash tests/check_docs.sh              # structural lint (versions, file paths)
-python3 ingest_code_sessions.py       # incremental Claude Code session ingest
-python3 ingest.py                     # parse-only, no embedding (dry-run check)
+pytest                         # unit tests (ingest, query, build_db, code sessions)
+bash tests/check_docs.sh       # structural lint (versions, file paths)
+python3 ingest_code_sessions.py  # incremental Claude Code session ingest
+python3 ingest.py              # parse-only, no embedding (dry-run check)
 ```
 
 ## How the MCP server is actually used

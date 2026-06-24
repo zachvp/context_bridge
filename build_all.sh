@@ -3,6 +3,12 @@ set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
+# Use the local venv if available, otherwise fall back to system python3.
+PYTHON="$SCRIPT_DIR/.venv/bin/python3"
+if [ ! -f "$PYTHON" ]; then
+    PYTHON=python3
+fi
+
 usage() {
     cat <<EOF
 Usage: ./build_all.sh [--log FILE] [-h] [EXPORT]
@@ -91,7 +97,7 @@ if [ $# -ge 1 ] && [ -n "$1" ]; then
     echo "=== Step 0: Unpacking export ==="
     rm -rf "$SCRIPT_DIR/data/inspect"
     mkdir -p "$SCRIPT_DIR/data/inspect"
-    python3 -m zipfile -e "$EXPORT_FILE" "$SCRIPT_DIR/data/inspect"
+    "$PYTHON" -m zipfile -e "$EXPORT_FILE" "$SCRIPT_DIR/data/inspect"
     echo "  Unpacked to data/inspect/"
     echo ""
 
@@ -100,8 +106,8 @@ if [ $# -ge 1 ] && [ -n "$1" ]; then
 fi
 
 echo "=== Step 1: Claude.ai export ==="
-python3 build_db.py "$@"
+"$PYTHON" build_db.py "$@"
 
 echo ""
 echo "=== Step 2: Claude Code sessions ==="
-python3 ingest_code_sessions.py
+"$PYTHON" ingest_code_sessions.py
