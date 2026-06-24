@@ -5,9 +5,10 @@
 set -uo pipefail
 
 PASS=0; FAIL=0; SKIP=0
+FAILURES=()
 
 pass() { echo "  [PASS] $1"; PASS=$((PASS + 1)); }
-fail() { echo "  [FAIL] $1"; FAIL=$((FAIL + 1)); }
+fail() { echo "  [FAIL] $1"; FAIL=$((FAIL + 1)); FAILURES+=("$1"); }
 skip() { echo "  [SKIP] $1"; SKIP=$((SKIP + 1)); }
 
 check() {
@@ -123,5 +124,12 @@ fi
 echo ""
 echo "================================================"
 printf "  %d passed  %d failed  %d skipped\n" "$PASS" "$FAIL" "$SKIP"
+if [ "${#FAILURES[@]}" -gt 0 ]; then
+    echo ""
+    echo "  Failed checks:"
+    for f in "${FAILURES[@]}"; do
+        echo "    - $f"
+    done
+fi
 echo "================================================"
 [ "$FAIL" -eq 0 ]

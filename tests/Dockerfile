@@ -16,11 +16,10 @@ WORKDIR /context_bridge
 
 COPY requirements.txt .
 RUN --mount=type=cache,target=/root/.cache/pip \
-    python3 -m venv .venv \
-    && .venv/bin/pip install -r requirements.txt pytest pytest-asyncio
+    pip install -r requirements.txt pytest pytest-asyncio
 
 COPY . .
 
 ENV PYTHONPATH=/context_bridge
 
-CMD ["bash", "-c", "bash tests/test_wizard.sh && .venv/bin/python -m pytest tests/ -v --tb=short"]
+CMD ["bash", "-c", "bash tests/test_wizard.sh && python3 -m pytest tests/ -v --tb=short"]
