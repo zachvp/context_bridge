@@ -16,7 +16,8 @@ WORKDIR /context_bridge
 
 COPY requirements.txt .
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install -r requirements.txt pytest pytest-asyncio
+    pip install -r requirements.txt pytest pytest-asyncio \
+    && python3 -m venv /context_bridge/.venv --system-site-packages
 
 COPY . .
 
