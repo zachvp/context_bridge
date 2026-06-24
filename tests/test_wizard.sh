@@ -4,6 +4,8 @@
 
 set -uo pipefail
 
+SCRIPTS_DIR="${SCRIPTS_DIR:-scripts}"
+
 PASS=0; FAIL=0; SKIP=0
 FAILURES=()
 
@@ -23,14 +25,14 @@ check() {
 # ---------------------------------------------------------------------------
 echo ""
 echo "=== Static analysis ==="
-check "bash -n wizard.sh"    bash -n wizard.sh
-check "bash -n run_server.sh" bash -n run_server.sh
-check "bash -n build_all.sh"  bash -n build_all.sh
+check "bash -n $SCRIPTS_DIR/wizard.sh"     bash -n "$SCRIPTS_DIR/wizard.sh"
+check "bash -n $SCRIPTS_DIR/run_server.sh" bash -n "$SCRIPTS_DIR/run_server.sh"
+check "bash -n $SCRIPTS_DIR/build_all.sh"  bash -n "$SCRIPTS_DIR/build_all.sh"
 
 if command -v shellcheck > /dev/null 2>&1; then
-    check "shellcheck wizard.sh"    shellcheck wizard.sh
-    check "shellcheck run_server.sh" shellcheck run_server.sh
-    check "shellcheck build_all.sh"  shellcheck build_all.sh
+    check "shellcheck $SCRIPTS_DIR/wizard.sh"     shellcheck "$SCRIPTS_DIR/wizard.sh"
+    check "shellcheck $SCRIPTS_DIR/run_server.sh" shellcheck "$SCRIPTS_DIR/run_server.sh"
+    check "shellcheck $SCRIPTS_DIR/build_all.sh"  shellcheck "$SCRIPTS_DIR/build_all.sh"
 else
     skip "shellcheck not installed"
 fi
@@ -92,7 +94,7 @@ echo "=== MCP registration (wizard.sh) ==="
 # Feed: scope (1=global), overwrite-if-exists (y), DB path (1=default).
 # "y" for DB choice falls through to default when context-bridge isn't
 # pre-registered (no overwrite prompt), so this input works either way.
-if printf "1\ny\n1\n" | bash wizard.sh > /tmp/install_out.txt 2>&1; then
+if printf "1\ny\n1\n" | bash "$SCRIPTS_DIR/wizard.sh" > /tmp/install_out.txt 2>&1; then
     check "context-bridge registered" claude mcp get context-bridge
 else
     # claude mcp add may require auth in a headless container — show output and skip

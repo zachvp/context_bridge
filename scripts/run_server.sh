@@ -18,7 +18,10 @@ EOF
 [[ "${1:-}" == "-h" || "${1:-}" == "--help" ]] && { usage; exit 0; }
 
 SCRIPT_DIR="$(cd "$(dirname "$0")" && pwd)"
-cd "$SCRIPT_DIR" || exit 1
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+WIZARD_CMD="$SCRIPT_DIR/wizard.sh"
+SERVER_SCRIPT="$PROJECT_ROOT/server.py"
+cd "$PROJECT_ROOT" || exit 1
 
 # Load user config if present (sets CONTEXT_BRIDGE_DB_PATH etc.)
 if [ -f .env ]; then
@@ -29,7 +32,7 @@ if [ -f .env ]; then
 fi
 
 # Use the local venv if available, otherwise fall back to system python3.
-PYTHON="$SCRIPT_DIR/.venv/bin/python3"
+PYTHON="$PROJECT_ROOT/.venv/bin/python3"
 if [ ! -f "$PYTHON" ]; then
     PYTHON=python3
 fi
@@ -38,8 +41,8 @@ fi
 # the MCP runtime, which surfaces errors poorly over stdio.
 if ! "$PYTHON" -c "import mcp, fastembed, numpy" 2>/dev/null; then
     echo "Error: required Python packages not found." >&2
-    echo "Run: $SCRIPT_DIR/wizard.sh" >&2
+    echo "Run: $WIZARD_CMD" >&2
     exit 1
 fi
 
-exec "$PYTHON" server.py
+exec "$PYTHON" "$SERVER_SCRIPT"

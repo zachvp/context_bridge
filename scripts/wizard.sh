@@ -2,12 +2,18 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
 SERVER_CMD="$SCRIPT_DIR/run_server.sh"
-VENV_DIR="$SCRIPT_DIR/.venv"
+BUILD_CMD="$SCRIPT_DIR/build_all.sh"
+VENV_DIR="$PROJECT_ROOT/.venv"
+REQUIREMENTS="$PROJECT_ROOT/requirements.txt"
+ENV_FILE="$PROJECT_ROOT/.env"
+ENV_EXAMPLE="$PROJECT_ROOT/.env.example"
+MCP_SERVER_NAME="context-bridge"
 
 usage() {
     cat <<EOF
-Usage: ./wizard.sh [-h]
+Usage: scripts/wizard.sh [-h]
 
 Interactive setup wizard. Guides you through:
   - Registering context-bridge as an MCP server in Claude Code
@@ -73,12 +79,12 @@ case "$SCOPE_CHOICE" in
 esac
 
 # --- Step 2: Handle existing registration ---
-if claude mcp get context-bridge > /dev/null 2>&1; then
+if claude mcp get "$MCP_SERVER_NAME" > /dev/null 2>&1; then
     echo ""
-    printf "context-bridge is already registered. Overwrite? [y/N] "
+    printf "%s is already registered. Overwrite? [y/N] " "$MCP_SERVER_NAME"
     read -r OVERWRITE
     if [[ "$OVERWRITE" =~ ^[Yy]$ ]]; then
-        claude mcp remove context-bridge
+        claude mcp remove "$MCP_SERVER_NAME"
     else
         echo "Aborting."
         exit 0
@@ -86,7 +92,7 @@ if claude mcp get context-bridge > /dev/null 2>&1; then
 fi
 
 # --- Step 3: DB path ---
-DEFAULT_DB="$SCRIPT_DIR/chat_memory.db"
+DEFAULT_DB="$PROJECT_ROOT/chat_memory.db"
 echo ""
 echo "Where should the database be stored?"
 echo "  [1] Default: $DEFAULT_DB"
@@ -114,22 +120,21 @@ else
 fi
 
 echo "Installing dependencies..."
-"$VENV_DIR/bin/pip" install --quiet -r "$SCRIPT_DIR/requirements.txt"
+"$VENV_DIR/bin/pip" install --quiet -r "$REQUIREMENTS"
 echo "  Done."
 
 # --- Step 5: Register MCP server ---
 echo ""
-claude mcp add --scope "$SCOPE" context-bridge "$SERVER_CMD"
+claude mcp add --scope "$SCOPE" "$MCP_SERVER_NAME" "$SERVER_CMD"
 echo "  Registered ($SCOPE_DESC)."
 
 # --- Step 6: Write .env ---
-ENV_FILE="$SCRIPT_DIR/.env"
 if [ -f "$ENV_FILE" ]; then
     echo ""
     echo "  .env already exists — skipping. Edit manually to change CONTEXT_BRIDGE_DB_PATH."
 else
     sed "s|CONTEXT_BRIDGE_DB_PATH=.*|CONTEXT_BRIDGE_DB_PATH=$DB_PATH|" \
-        "$SCRIPT_DIR/.env.example" > "$ENV_FILE"
+        "$ENV_EXAMPLE" > "$ENV_FILE"
     echo "  Wrote .env (DB: $DB_PATH)."
 fi
 
@@ -142,7 +147,7 @@ echo "     Claude.ai → Settings → Account → Export Data"
 echo "     Anthropic emails a .dms file within a few minutes."
 echo ""
 echo "  2. Build the database:"
-echo "     ./build_all.sh path/to/export.dms"
-echo "     (run ./build_all.sh --help for full options)"
+echo "     $BUILD_CMD path/to/export.dms"
+echo "     (run $BUILD_CMD --help for full options)"
 echo ""
 echo "  3. Restart Claude Code for the MCP server to take effect."

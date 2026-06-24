@@ -93,7 +93,7 @@ def build_documents(export_dir: Path) -> tuple[list[Document], int, int]:
     except FileNotFoundError:
         raise FileNotFoundError(
             f"conversations.json not found in {export_dir}. "
-            "Pass the unpacked export directory, or provide the .dms/.zip path to build_all.sh."
+            "Pass the unpacked export directory, or provide the .dms/.zip path to scripts/build_all.sh."
         ) from None
 
     skipped = 0

@@ -2,9 +2,13 @@
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "$SCRIPT_DIR/.." && pwd)"
+INSPECT_DIR="$PROJECT_ROOT/data/inspect"
+BUILD_DB_SCRIPT="$PROJECT_ROOT/build_db.py"
+INGEST_SESSIONS_SCRIPT="$PROJECT_ROOT/ingest_code_sessions.py"
 
 # Use the local venv if available, otherwise fall back to system python3.
-PYTHON="$SCRIPT_DIR/.venv/bin/python3"
+PYTHON="$PROJECT_ROOT/.venv/bin/python3"
 if [ ! -f "$PYTHON" ]; then
     PYTHON=python3
 fi
@@ -60,14 +64,14 @@ fi
 trap 'echo "" >&2; echo "Error: build_all.sh failed at line $LINENO (exit $?)" >&2' ERR
 
 # Load .env if present (sets CONTEXT_BRIDGE_DB_PATH etc.)
-if [ -f "$SCRIPT_DIR/.env" ]; then
+if [ -f "$PROJECT_ROOT/.env" ]; then
     set -a
     # shellcheck source=/dev/null
-    source "$SCRIPT_DIR/.env"
+    source "$PROJECT_ROOT/.env"
     set +a
 fi
 
-cd "$SCRIPT_DIR"
+cd "$PROJECT_ROOT"
 
 # --- Optional Step 0: unpack export file ---
 if [ $# -ge 1 ] && [ -n "$1" ]; then
@@ -76,7 +80,7 @@ if [ $# -ge 1 ] && [ -n "$1" ]; then
     # Resolve to absolute path
     case "$EXPORT_FILE" in
         /*) ;;
-        *) EXPORT_FILE="$SCRIPT_DIR/$EXPORT_FILE" ;;
+        *) EXPORT_FILE="$PROJECT_ROOT/$EXPORT_FILE" ;;
     esac
 
     if [ ! -f "$EXPORT_FILE" ]; then
@@ -95,9 +99,9 @@ if [ $# -ge 1 ] && [ -n "$1" ]; then
     fi
 
     echo "=== Step 0: Unpacking export ==="
-    rm -rf "$SCRIPT_DIR/data/inspect"
-    mkdir -p "$SCRIPT_DIR/data/inspect"
-    "$PYTHON" -m zipfile -e "$EXPORT_FILE" "$SCRIPT_DIR/data/inspect"
+    rm -rf "$INSPECT_DIR"
+    mkdir -p "$INSPECT_DIR"
+    "$PYTHON" -m zipfile -e "$EXPORT_FILE" "$INSPECT_DIR"
     echo "  Unpacked to data/inspect/"
     echo ""
 
@@ -106,8 +110,8 @@ if [ $# -ge 1 ] && [ -n "$1" ]; then
 fi
 
 echo "=== Step 1: Claude.ai export ==="
-"$PYTHON" build_db.py "$@"
+"$PYTHON" "$BUILD_DB_SCRIPT" "$@"
 
 echo ""
 echo "=== Step 2: Claude Code sessions ==="
-"$PYTHON" ingest_code_sessions.py
+"$PYTHON" "$INGEST_SESSIONS_SCRIPT"

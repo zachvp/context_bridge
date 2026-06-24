@@ -4,6 +4,8 @@
 # Exits non-zero if any check fails.
 set -uo pipefail
 
+SCRIPTS_DIR="${SCRIPTS_DIR:-scripts}"
+
 PASS=0; FAIL=0
 
 pass() { echo "  [PASS] $1"; PASS=$((PASS + 1)); }
@@ -32,9 +34,9 @@ fi
 # ---------------------------------------------------------------------------
 echo ""
 echo "=== --help exits 0 ==="
-check "wizard.sh --help"    bash wizard.sh --help
-check "build_all.sh --help"  bash build_all.sh --help
-check "run_server.sh --help" bash run_server.sh --help
+check "$SCRIPTS_DIR/wizard.sh --help"    bash "$SCRIPTS_DIR/wizard.sh" --help
+check "$SCRIPTS_DIR/build_all.sh --help"  bash "$SCRIPTS_DIR/build_all.sh" --help
+check "$SCRIPTS_DIR/run_server.sh --help" bash "$SCRIPTS_DIR/run_server.sh" --help
 
 # ---------------------------------------------------------------------------
 echo ""
@@ -53,9 +55,9 @@ check "requirements.txt"               test -f requirements.txt
 check "pyproject.toml"                 test -f pyproject.toml
 check ".env.example"                   test -f .env.example
 check "schema.sql"                     test -f schema.sql
-check "build_all.sh"                   test -f build_all.sh
-check "wizard.sh"                      test -f wizard.sh
-check "run_server.sh"                  test -f run_server.sh
+check "$SCRIPTS_DIR/build_all.sh"      test -f "$SCRIPTS_DIR/build_all.sh"
+check "$SCRIPTS_DIR/wizard.sh"         test -f "$SCRIPTS_DIR/wizard.sh"
+check "$SCRIPTS_DIR/run_server.sh"     test -f "$SCRIPTS_DIR/run_server.sh"
 check ".github/workflows/ci.yml"       test -f .github/workflows/ci.yml
 
 # ---------------------------------------------------------------------------

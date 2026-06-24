@@ -4,7 +4,7 @@ See `PLAN.md` for the original design rationale and vague roadmap.
 
 ## Installation
 ```bash
-bash wizard.sh
+bash scripts/wizard.sh
 ```
 
 The wizard creates a `.venv`, installs dependencies, registers the MCP server
@@ -34,7 +34,7 @@ There is no API for this — the export is pull-only, triggered manually:
 
 1. Go to **Claude.ai → Settings → Account → Export Data**
 2. Anthropic emails you a `.dms` file attachment (has been a few minutes in my exp)
-3. Run `./build_all.sh path/to/export.dms` — it handles the rename, unpack, and rebuild
+3. Run `./scripts/build_all.sh path/to/export.dms` — it handles the rename, unpack, and rebuild
 
 ## Abstract overview
 
@@ -70,13 +70,13 @@ Each shell script accepts `--help` for full usage and options. Quick reference:
 
 | Script | Purpose |
 |---|---|
-| `./wizard.sh` | One-time setup: venv, dependencies, MCP registration |
-| `./build_all.sh` | Rebuild DB from a Claude.ai export (run after each new export) |
-| `./run_server.sh` | Start the MCP server manually (smoke check outside Claude Code) |
+| `./scripts/wizard.sh` | One-time setup: venv, dependencies, MCP registration |
+| `./scripts/build_all.sh` | Rebuild DB from a Claude.ai export (run after each new export) |
+| `./scripts/run_server.sh` | Start the MCP server manually (smoke check outside Claude Code) |
 
 ```bash
-./build_all.sh --help       # full options + steps
-./wizard.sh --help         # prerequisites + what the wizard does
+./scripts/build_all.sh --help       # full options + steps
+./scripts/wizard.sh --help         # prerequisites + what the wizard does
 ```
 
 **Tests and standalone scripts:**
@@ -124,10 +124,10 @@ Reduce `CONTEXT_BRIDGE_BATCH_SIZE` in `.env` (try `16` or `8`) and re-run.
 
 **The MCP server isn't appearing in Claude Code.**
 Run `claude mcp list` to verify registration, then restart Claude Code — the
-server list is read at session start. If it's missing, re-run `./wizard.sh`.
+server list is read at session start. If it's missing, re-run `./scripts/wizard.sh`.
 
 **`search_chat_history` returns nothing (or only irrelevant results).**
-Run `./build_all.sh` first — the server needs a built `chat_memory.db`. If the
+Run `./scripts/build_all.sh` first — the server needs a built `chat_memory.db`. If the
 DB exists, try a more descriptive phrase ("what did we decide about X") rather
 than a single keyword.
 
