@@ -70,7 +70,8 @@ def _merge_surviving(old_db_path: Path, new_conn: sqlite3.Connection, covered_uu
 
         rows = old_conn.execute(
             "SELECT id, text, source_type, title, timestamp, embedding, source, project "
-            "FROM chunks WHERE source = ?", (SOURCE_CLAUDE_AI,)
+            "FROM chunks WHERE source = ?",
+            (SOURCE_CLAUDE_AI,),
         ).fetchall()
     finally:
         old_conn.close()
