@@ -76,6 +76,44 @@ def _chunk_sort_key(chunk_id: str) -> tuple[int, int]:
     return (int(major), int(minor) if minor else 0)
 
 
+def _uuid_from_chunk_id(chunk_id: str) -> str:
+    """Extract conversation uuid from any chunk id format.
+    - Regular:      <uuid>:<n>           → uuid is left of first ":"
+    - Code session: code:<uuid>:<n>      → uuid is middle segment
+    """
+    parts = chunk_id.split(":")
+    return parts[1] if parts[0] == "code" else parts[0]
+
+
+def get_nearby_context(chunk_id: str, num_chunks: int = 2, db_path: Path = DB_PATH) -> str:
+    """Return the chunk matching chunk_id plus num_chunks before and after it.
+    Use this instead of get_conversation when you only need local context around
+    a search hit — avoids loading the full (potentially very large) conversation."""
+    conv_uuid = _uuid_from_chunk_id(chunk_id)
+
+    conn = sqlite3.connect(db_path)
+    rows = conn.execute(
+        "SELECT id, text FROM chunks WHERE id LIKE ? OR id LIKE ?",
+        (f"{conv_uuid}:%", f"%:{conv_uuid}:%"),
+    ).fetchall()
+    conn.close()
+
+    if not rows:
+        return ""
+
+    rows.sort(key=lambda r: _chunk_sort_key(r[0]))
+
+    target_idx = next((i for i, (rid, _) in enumerate(rows) if rid == chunk_id), 0)
+    start = max(0, target_idx - num_chunks)
+    end = min(len(rows), target_idx + num_chunks + 1)
+    window = rows[start:end]
+
+    title, _, _ = rows[0][1].partition("\n\n")
+    bodies = [text.partition("\n\n")[2] for _, text in window]
+    header = f"{title}\n\n[chunks {start}–{end - 1} of {len(rows)}]\n\n"
+    return header + "\n".join(bodies)
+
+
 def get_conversation(conversation_uuid: str, db_path: Path = DB_PATH) -> str:
     """Reconstruct a conversation's full text by concatenating its chunks in
     order. Pulled from the DB rather than the raw archive, so this works even

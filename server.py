@@ -30,8 +30,10 @@ def search_chat_history(query_text: str, top_k: int = 5) -> list[dict]:
         top_k: how many results to return (default 5).
 
     Returns a list of hits, each with: id, title, source_type, timestamp,
-    score (cosine similarity, higher is more relevant), and a text snippet.
-    To retrieve the full thread, pass the hit's uuid to get_conversation:
+    score (cosine similarity, higher is more relevant), and the full chunk text.
+    Each chunk is ~1500 chars. For additional surrounding context, pass the
+    hit's id to get_nearby_context. To retrieve the entire conversation, pass
+    the hit's uuid to get_conversation:
     - conversation hit id format: <uuid>:<n>  — uuid is on left ":"
     - code_session hit id format: code:<uuid>:<n>  — uuid is in middle
     """
@@ -43,10 +45,27 @@ def search_chat_history(query_text: str, top_k: int = 5) -> list[dict]:
             "source_type": h.source_type,
             "timestamp": h.timestamp,
             "score": round(h.score, 4),
-            "snippet": h.text[:500],
+            "text": h.text,
         }
         for h in hits
     ]
+
+
+@mcp.tool()
+def get_nearby_context(chunk_id: str, num_chunks: int = 2) -> str:
+    """Retrieve a search hit's chunk plus surrounding context without loading
+    the full conversation. Prefer this over get_conversation when you need
+    local context around a specific match from search_chat_history.
+
+    Args:
+        chunk_id: the id field from a search_chat_history hit.
+        num_chunks: how many chunks to include before and after the hit (default 2).
+
+    Returns the surrounding window as text, with a header showing which chunk
+    range was returned (e.g. "[chunks 3–7 of 22]"). Returns empty string if
+    the chunk id is not found.
+    """
+    return query.get_nearby_context(chunk_id, num_chunks=num_chunks)
 
 
 @mcp.tool()

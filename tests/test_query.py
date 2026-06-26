@@ -149,3 +149,115 @@ def test_get_conversation_code_session(tmp_path: Path) -> None:
     )
     result = query.get_conversation(code_uuid, db_path=db)
     assert "Code body." in result
+
+
+# --- _uuid_from_chunk_id ---
+
+
+def test_uuid_from_chunk_id_regular() -> None:
+    uuid = "aaaaaaaa-0000-0000-0000-000000000001"
+    assert query._uuid_from_chunk_id(f"{uuid}:3") == uuid
+
+
+def test_uuid_from_chunk_id_code_session() -> None:
+    uuid = "cccccccc-0000-0000-0000-000000000001"
+    assert query._uuid_from_chunk_id(f"code:{uuid}:5") == uuid
+
+
+def test_uuid_from_chunk_id_split_piece() -> None:
+    uuid = "aaaaaaaa-0000-0000-0000-000000000001"
+    assert query._uuid_from_chunk_id(f"{uuid}:2.1") == uuid
+
+
+# --- get_nearby_context ---
+
+
+def _make_conv_db(tmp_path: Path, num_chunks: int, uuid: str = UUID) -> Path:
+    """Build a DB with `num_chunks` sequential chunks for a single conversation."""
+    db = tmp_path / "chat.db"
+    rows = [
+        (
+            f"{uuid}:{i}",
+            f"Title\n\nBody of chunk {i}.",
+            "conversation",
+            "Title",
+            "2024-01-01",
+            b"",
+            "claude_ai",
+            None,
+        )
+        for i in range(num_chunks)
+    ]
+    _make_query_db(db, rows)
+    return db
+
+
+def test_get_nearby_context_unknown_chunk(tmp_path: Path) -> None:
+    db = _make_conv_db(tmp_path, num_chunks=3)
+    result = query.get_nearby_context("nonexistent-uuid:0", db_path=db)
+    assert result == ""
+
+
+def test_get_nearby_context_single_chunk_conversation(tmp_path: Path) -> None:
+    db = _make_conv_db(tmp_path, num_chunks=1)
+    result = query.get_nearby_context(f"{UUID}:0", num_chunks=2, db_path=db)
+    assert "Body of chunk 0." in result
+    assert "[chunks 0–0 of 1]" in result
+
+
+def test_get_nearby_context_middle_of_conversation(tmp_path: Path) -> None:
+    db = _make_conv_db(tmp_path, num_chunks=5)
+    result = query.get_nearby_context(f"{UUID}:2", num_chunks=1, db_path=db)
+    assert "Body of chunk 1." in result
+    assert "Body of chunk 2." in result
+    assert "Body of chunk 3." in result
+    assert "Body of chunk 0." not in result
+    assert "Body of chunk 4." not in result
+    assert "[chunks 1–3 of 5]" in result
+
+
+def test_get_nearby_context_clips_at_start(tmp_path: Path) -> None:
+    db = _make_conv_db(tmp_path, num_chunks=5)
+    result = query.get_nearby_context(f"{UUID}:0", num_chunks=2, db_path=db)
+    assert "Body of chunk 0." in result
+    assert "Body of chunk 1." in result
+    assert "Body of chunk 2." in result
+    assert "[chunks 0–2 of 5]" in result
+
+
+def test_get_nearby_context_clips_at_end(tmp_path: Path) -> None:
+    db = _make_conv_db(tmp_path, num_chunks=5)
+    result = query.get_nearby_context(f"{UUID}:4", num_chunks=2, db_path=db)
+    assert "Body of chunk 2." in result
+    assert "Body of chunk 3." in result
+    assert "Body of chunk 4." in result
+    assert "[chunks 2–4 of 5]" in result
+
+
+def test_get_nearby_context_title_appears_once(tmp_path: Path) -> None:
+    db = _make_conv_db(tmp_path, num_chunks=5)
+    result = query.get_nearby_context(f"{UUID}:2", num_chunks=2, db_path=db)
+    assert result.count("Title\n\n") == 1
+
+
+def test_get_nearby_context_code_session(tmp_path: Path) -> None:
+    code_uuid = "cccccccc-0000-0000-0000-000000000001"
+    db = tmp_path / "chat.db"
+    rows = [
+        (
+            f"code:{code_uuid}:{i}",
+            f"Session\n\nCode chunk {i}.",
+            "code_session",
+            "Session",
+            "2024-01-01",
+            b"",
+            "claude_code",
+            "myproject",
+        )
+        for i in range(3)
+    ]
+    _make_query_db(db, rows)
+    result = query.get_nearby_context(f"code:{code_uuid}:1", num_chunks=1, db_path=db)
+    assert "Code chunk 0." in result
+    assert "Code chunk 1." in result
+    assert "Code chunk 2." in result
