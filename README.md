@@ -75,17 +75,17 @@ Each shell script accepts `--help` for full usage and options. Quick reference:
 | `./scripts/run_server.sh` | Start the MCP server manually (smoke check outside Claude Code) |
 
 ```bash
-./scripts/build_all.sh --help       # full options + steps
+./scripts/build_all.sh --help      # full options + steps
 ./scripts/wizard.sh --help         # prerequisites + what the wizard does
 ```
 
 **Tests and standalone scripts:**
 ```bash
-pytest                         # unit tests (ingest, query, build_db, code sessions)
-bash tests/check_docs.sh       # structural lint (versions, file paths)
+pytest                           # unit tests (ingest, query, build_db, code sessions)
+bash tests/check_docs.sh         # structural lint (versions, file paths)
 python3 ingest_code_sessions.py  # incremental Claude Code session ingest
-python3 ingest.py              # parse-only, no embedding (dry-run check)
-python3 query.py "your query"  # ad-hoc CLI search (--top-k N, --db PATH)
+python3 ingest.py                # parse-only, no embedding (dry-run check)
+python3 query.py "your query"    # ad-hoc CLI search (--top-k N, --db PATH)
 ```
 
 ## How the MCP server is actually used
@@ -94,8 +94,9 @@ The server registers two tools with Claude at session start: `search_chat_histor
 and `get_conversation`. Their schemas cost ~100–200 tokens each for the lifetime
 of the session, whether or not they're ever called.
 
-**What triggers a search:** the tool description drives autonomous behavior.
-The current description is reactive — Claude calls `search_chat_history` when
+**What triggers a search:**
+Note that the tool description drives autonomous behavior.
+The current description is reactive: Claude calls `search_chat_history` when
 it notices it's about to re-derive something it suspects has been covered before.
 In a narrow coding task it may never fire; in a design or planning conversation
 it may fire more.
@@ -109,8 +110,8 @@ descriptive phrases over single keywords — "what did we decide about chunking
 strategy" retrieves better than "chunking".
 
 **Current retrieval limitation:** `search_chat_history` has no locality signal.
-A query from a `sol_reason` session ranks `sol_reason` sessions no higher than
-sessions from `synesthesia`, `djmgmt`, or any other project. This is the Phase 3
+A query from a `foo` session ranks `foo` sessions no higher than
+sessions from `bar`, `baz`, or any other project. This is the Phase 3
 gap (`current_project` parameter — see `PLAN.md`). Until Phase 3 is implemented,
 cross-project noise is a known retrieval quality ceiling.
 
@@ -124,8 +125,8 @@ and retry. The cache lives at `~/.cache/fastembed/`.
 Reduce `CONTEXT_BRIDGE_BATCH_SIZE` in `.env` (try `16` or `8`) and re-run.
 
 **The MCP server isn't appearing in Claude Code.**
-Run `claude mcp list` to verify registration, then restart Claude Code — the
-server list is read at session start. If it's missing, re-run `./scripts/wizard.sh`.
+Run `claude mcp list` to verify registration, then restart Claude Code (exit & resume session).
+The server list is read at session start. If it's missing, re-run `./scripts/wizard.sh`.
 
 **`search_chat_history` returns nothing (or only irrelevant results).**
 Run `./scripts/build_all.sh` first — the server needs a built `chat_memory.db`. If the
