@@ -173,7 +173,9 @@ def main(export_dir: Path, db_path: Path) -> None:
     print(f"  done in {time.time() - start:.1f}s")
 
     print(f"writing {db_path}...")
-    write_db(docs, vectors, db_path, export_mtime=export_mtime, old_db_path=db_path, covered_uuids=covered_uuids)
+    write_db(
+        docs, vectors, db_path, export_mtime=export_mtime, old_db_path=db_path, covered_uuids=covered_uuids
+    )
     print(f"  {db_path} ({db_path.stat().st_size / 1e6:.1f} MB)")
 
 

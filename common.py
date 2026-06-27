@@ -12,8 +12,7 @@ _MIGRATIONS_DIR = Path(__file__).parent / "migrations"
 def run_migrations(conn: sqlite3.Connection, migrations_dir: Path = _MIGRATIONS_DIR) -> None:
     """Apply any unapplied numbered SQL migration files in migrations_dir."""
     conn.execute(
-        "CREATE TABLE IF NOT EXISTS schema_migrations "
-        "(version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)"
+        "CREATE TABLE IF NOT EXISTS schema_migrations (version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)"
     )
     conn.commit()
     applied = {row[0] for row in conn.execute("SELECT version FROM schema_migrations")}
@@ -27,6 +26,7 @@ def run_migrations(conn: sqlite3.Connection, migrations_dir: Path = _MIGRATIONS_
             (version, datetime.now(timezone.utc).isoformat()),
         )
         conn.commit()
+
 
 WINDOW_CHARS = 1_500
 OVERLAP_TURNS = 1
