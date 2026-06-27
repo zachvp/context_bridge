@@ -38,7 +38,7 @@ from common import (
 )
 
 DEFAULT_SESSIONS_DIR = Path.home() / ".claude" / "projects"
-MTIME_GRACE = 60  # skip files written within the last N seconds (may be mid-write)
+MTIME_GRACE = 30  # skip files written within the last N seconds (may be mid-write)
 
 
 def load_ingested(conn: sqlite3.Connection) -> dict[str, float]:
