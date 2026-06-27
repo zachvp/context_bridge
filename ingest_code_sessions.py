@@ -33,37 +33,12 @@ from common import (
     WINDOW_CHARS,
     OVERLAP_TURNS,
     MAX_CHUNK_CHARS,
-    SOURCE_CLAUDE_AI,
     SOURCE_CLAUDE_CODE,
+    run_migrations,
 )
 
 DEFAULT_SESSIONS_DIR = Path.home() / ".claude" / "projects"
 MTIME_GRACE = 60  # skip files written within the last N seconds (may be mid-write)
-
-MIGRATE_SQL = f"""
-CREATE TABLE IF NOT EXISTS sessions (
-    session_uuid  TEXT NOT NULL,
-    source        TEXT NOT NULL DEFAULT '{SOURCE_CLAUDE_CODE}',
-    file_mtime    REAL NOT NULL,
-    ingested_at   TEXT NOT NULL,
-    PRIMARY KEY (session_uuid, source)
-);
-"""
-
-
-def ensure_schema(conn: sqlite3.Connection) -> None:
-    """Add columns/tables absent from older chat_memory.db builds."""
-    conn.executescript(MIGRATE_SQL)
-    existing = {row[1] for row in conn.execute("PRAGMA table_info(chunks)")}
-    if "source" not in existing:
-        conn.execute(f"ALTER TABLE chunks ADD COLUMN source TEXT NOT NULL DEFAULT '{SOURCE_CLAUDE_AI}'")
-    if "project" not in existing:
-        conn.execute("ALTER TABLE chunks ADD COLUMN project TEXT")
-    # Migrate pre-source sessions tables (single-column PK → add discriminator column)
-    session_cols = {row[1] for row in conn.execute("PRAGMA table_info(sessions)")}
-    if "source" not in session_cols:
-        conn.execute(f"ALTER TABLE sessions ADD COLUMN source TEXT NOT NULL DEFAULT '{SOURCE_CLAUDE_CODE}'")
-    conn.commit()
 
 
 def load_ingested(conn: sqlite3.Connection) -> dict[str, float]:
@@ -288,7 +263,7 @@ def upsert_session(
 def main(db_path: Path, sessions_dir: Path, pruned_out=None) -> None:
     now = time.time()
     conn = sqlite3.connect(db_path)
-    ensure_schema(conn)
+    run_migrations(conn)
     ingested = load_ingested(conn)
 
     session_files = list(sessions_dir.glob("*/*.jsonl"))

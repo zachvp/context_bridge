@@ -19,7 +19,7 @@ import time
 from datetime import datetime, timezone
 from pathlib import Path
 
-from common import Document, SOURCE_CLAUDE_AI
+from common import Document, SOURCE_CLAUDE_AI, run_migrations
 from embed import embed_documents, MODEL_NAME
 from ingest import build_documents
 
@@ -40,9 +40,6 @@ def _collect_docs(export_dir: Path) -> list[Document]:
     # all_docs.extend(chatgpt_docs)
 
     return all_docs
-
-
-SCHEMA_PATH = Path(__file__).parent / "schema.sql"
 
 
 def _merge_surviving(old_db_path: Path, new_conn: sqlite3.Connection, covered_uuids: set[str]) -> int:
@@ -96,6 +93,7 @@ def write_db(
     vectors,
     db_path: Path,
     *,
+    export_mtime: float,
     old_db_path: Path | None = None,
     covered_uuids: set[str] | None = None,
 ) -> None:
@@ -108,7 +106,7 @@ def write_db(
     tmp_path.unlink(missing_ok=True)
 
     conn = sqlite3.connect(tmp_path)
-    conn.executescript(SCHEMA_PATH.read_text())
+    run_migrations(conn)
 
     conn.executemany(
         "INSERT INTO chunks (id, text, source_type, title, timestamp, embedding, source, project) "
@@ -128,8 +126,8 @@ def write_db(
         ),
     )
     conn.execute(
-        "INSERT INTO meta (model_name, dim, built_at) VALUES (?, ?, ?)",
-        (MODEL_NAME, vectors.shape[1], datetime.now(timezone.utc).isoformat()),
+        "INSERT INTO meta (model_name, dim, built_at, export_mtime) VALUES (?, ?, ?, ?)",
+        (MODEL_NAME, vectors.shape[1], datetime.now(timezone.utc).isoformat(), export_mtime),
     )
 
     if old_db_path is not None and covered_uuids is not None:
@@ -144,6 +142,20 @@ def write_db(
 
 
 def main(export_dir: Path, db_path: Path) -> None:
+    conversations_path = export_dir / "conversations.json"
+    export_mtime = conversations_path.stat().st_mtime
+
+    if db_path.exists():
+        try:
+            old_conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
+            row = old_conn.execute("SELECT export_mtime FROM meta LIMIT 1").fetchone()
+            old_conn.close()
+            if row and row[0] is not None and export_mtime <= row[0]:
+                print("Claude.ai export unchanged — skipping.")
+                return
+        except sqlite3.OperationalError:
+            pass  # pre-migration DB without export_mtime column — proceed with rebuild
+
     print(f"export_dir: {export_dir.resolve()}")
     print(f"db_path:    {db_path.resolve()}")
     print("parsing/chunking sources...")
@@ -161,7 +173,7 @@ def main(export_dir: Path, db_path: Path) -> None:
     print(f"  done in {time.time() - start:.1f}s")
 
     print(f"writing {db_path}...")
-    write_db(docs, vectors, db_path, old_db_path=db_path, covered_uuids=covered_uuids)
+    write_db(docs, vectors, db_path, export_mtime=export_mtime, old_db_path=db_path, covered_uuids=covered_uuids)
     print(f"  {db_path} ({db_path.stat().st_size / 1e6:.1f} MB)")
 
 

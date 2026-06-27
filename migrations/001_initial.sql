@@ -1,6 +1,3 @@
--- chat_memory.db schema. Applied fresh on every build_db.py run —
--- no migrations needed, this file is just the shape of a fresh DB.
-
 CREATE TABLE chunks (
     id          TEXT PRIMARY KEY,   -- e.g. "<conversation_uuid>:<window_idx>" or "memories"
     text        TEXT NOT NULL,
@@ -18,7 +15,7 @@ CREATE INDEX idx_chunks_project ON chunks(project);
 
 -- Tracks ingested sessions for incremental refresh.
 -- Composite PK on (session_uuid, source) prevents collisions across providers.
-CREATE TABLE IF NOT EXISTS sessions (
+CREATE TABLE sessions (
     session_uuid  TEXT NOT NULL,
     source        TEXT NOT NULL DEFAULT 'claude_code',
     file_mtime    REAL NOT NULL,
@@ -29,8 +26,11 @@ CREATE TABLE IF NOT EXISTS sessions (
 -- Single-row table recording what produced this DB, so query.py can load the
 -- matching embedding model instead of assuming one, and so a mismatched
 -- rebuild (different model/dim) is caught loudly rather than silently.
+-- export_mtime: mtime of conversations.json at last build_db.py run, used to
+-- skip rebuilds when the Claude.ai export has not changed.
 CREATE TABLE meta (
-    model_name TEXT NOT NULL,
-    dim        INTEGER NOT NULL,
-    built_at   TEXT NOT NULL
+    model_name   TEXT NOT NULL,
+    dim          INTEGER NOT NULL,
+    built_at     TEXT NOT NULL,
+    export_mtime REAL
 );

@@ -1,7 +1,32 @@
 #!/usr/bin/env python3
 """Shared types and chunking utilities used by all ingest scripts."""
 
+import sqlite3
 from dataclasses import dataclass
+from datetime import datetime, timezone
+from pathlib import Path
+
+_MIGRATIONS_DIR = Path(__file__).parent / "migrations"
+
+
+def run_migrations(conn: sqlite3.Connection, migrations_dir: Path = _MIGRATIONS_DIR) -> None:
+    """Apply any unapplied numbered SQL migration files in migrations_dir."""
+    conn.execute(
+        "CREATE TABLE IF NOT EXISTS schema_migrations "
+        "(version INTEGER PRIMARY KEY, applied_at TEXT NOT NULL)"
+    )
+    conn.commit()
+    applied = {row[0] for row in conn.execute("SELECT version FROM schema_migrations")}
+    for path in sorted(migrations_dir.glob("*.sql")):
+        version = int(path.stem.split("_")[0])
+        if version in applied:
+            continue
+        conn.executescript(path.read_text())
+        conn.execute(
+            "INSERT INTO schema_migrations (version, applied_at) VALUES (?, ?)",
+            (version, datetime.now(timezone.utc).isoformat()),
+        )
+        conn.commit()
 
 WINDOW_CHARS = 1_500
 OVERLAP_TURNS = 1
