@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 set -e
 
+echo "--- lint ---"
+if ! ruff check . 2>&1; then
+    echo ""
+    echo "Fix:  ruff check --fix ."
+    exit 1
+fi
+
 echo "--- format check ---"
 if ! ruff format --check . 2>&1; then
     echo ""

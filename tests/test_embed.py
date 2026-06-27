@@ -3,7 +3,6 @@ Tests for embed_documents checkpoint/resume logic.
 No real model is loaded — embed() is patched with a deterministic fake.
 """
 
-from pathlib import Path
 from unittest.mock import MagicMock, patch
 
 import numpy as np
