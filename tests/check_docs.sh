@@ -55,7 +55,7 @@ echo "=== Required project files ==="
 check "requirements.txt"               test -f requirements.txt
 check "pyproject.toml"                 test -f pyproject.toml
 check ".env.example"                   test -f .env.example
-check "schema.sql"                     test -f schema.sql
+check "migrations/001_initial.sql"     test -f migrations/001_initial.sql
 check "$SCRIPTS_DIR/build_all.sh"      test -f "$SCRIPTS_DIR/build_all.sh"
 check "$SCRIPTS_DIR/wizard.sh"         test -f "$SCRIPTS_DIR/wizard.sh"
 check "$SCRIPTS_DIR/run_server.sh"     test -f "$SCRIPTS_DIR/run_server.sh"

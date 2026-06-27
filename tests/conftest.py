@@ -5,17 +5,14 @@ from pathlib import Path
 import numpy as np
 import pytest
 
-
-@pytest.fixture(scope="session")
-def schema_sql() -> str:
-    return (Path(__file__).parent.parent / "schema.sql").read_text()
+from common import run_migrations
 
 
 @pytest.fixture
-def make_db(schema_sql):
+def make_db():
     def _factory(path: Path, model_name: str, rows: list[tuple], dim: int = 4) -> None:
         conn = sqlite3.connect(path)
-        conn.executescript(schema_sql)
+        run_migrations(conn)
         conn.executemany(
             "INSERT INTO chunks (id, text, source_type, title, timestamp, embedding, source, project) "
             "VALUES (?, ?, ?, ?, ?, ?, ?, ?)",

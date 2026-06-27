@@ -66,7 +66,7 @@ fragile against UI changes and ToS-gray; not worth it for a "re-run after export
 context_bridge/
   PLAN.md                 (this file)
   ingest.py                # unzip + parse + chunk + embed + upsert
-  schema.sql               # SQLite table definitions (vec table + conversations table)
+  migrations/              # numbered SQL migration files applied by run_migrations()
   server.py                # MCP server: search_chat_history, get_conversation
   chat_memory.db            # generated, gitignored
   README.md                 # usage: how to export, how to ingest, how to register the MCP server

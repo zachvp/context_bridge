@@ -68,7 +68,7 @@ def test_partial_export_merge(tmp_path, make_db, fake_vec) -> None:
     new_vecs = np.zeros((1, DIM), dtype="float32")
     covered = {uuid_b, "memories"}
 
-    write_db(new_docs, new_vecs, new_db, old_db_path=old_db, covered_uuids=covered)
+    write_db(new_docs, new_vecs, new_db, export_mtime=0.0, old_db_path=old_db, covered_uuids=covered)
 
     ids = _chunk_ids(new_db)
     assert f"{uuid_a}:0" in ids, "chunk A should survive (absent from new export)"
@@ -109,7 +109,7 @@ def test_full_export_no_merge(tmp_path, make_db, fake_vec) -> None:
     new_vecs = np.zeros((1, DIM), dtype="float32")
     covered = {uuid_a, "memories"}
 
-    write_db(new_docs, new_vecs, new_db, old_db_path=old_db, covered_uuids=covered)
+    write_db(new_docs, new_vecs, new_db, export_mtime=0.0, old_db_path=old_db, covered_uuids=covered)
 
     conn = sqlite3.connect(new_db)
     text = conn.execute("SELECT text FROM chunks WHERE id = ?", (f"{uuid_a}:0",)).fetchone()[0]
@@ -152,7 +152,7 @@ def test_model_mismatch_skips_merge(tmp_path, make_db, fake_vec) -> None:
     new_vecs = np.zeros((1, DIM), dtype="float32")
     covered = {uuid_b, "memories"}
 
-    write_db(new_docs, new_vecs, new_db, old_db_path=old_db, covered_uuids=covered)
+    write_db(new_docs, new_vecs, new_db, export_mtime=0.0, old_db_path=old_db, covered_uuids=covered)
 
     ids = _chunk_ids(new_db)
     assert f"{uuid_a}:0" not in ids, "old chunk should NOT be merged when model differs"
@@ -179,7 +179,7 @@ def test_first_run_no_old_db(tmp_path, fake_vec) -> None:
     new_vecs = np.zeros((1, DIM), dtype="float32")
     covered = {uuid_a, "memories"}
 
-    write_db(new_docs, new_vecs, new_db, old_db_path=nonexistent, covered_uuids=covered)
+    write_db(new_docs, new_vecs, new_db, export_mtime=0.0, old_db_path=nonexistent, covered_uuids=covered)
 
     ids = _chunk_ids(new_db)
     assert f"{uuid_a}:0" in ids
@@ -230,7 +230,7 @@ def test_code_session_chunks_not_merged(tmp_path, make_db, fake_vec) -> None:
     new_vecs = np.zeros((1, DIM), dtype="float32")
     covered = {"memories"}
 
-    write_db(new_docs, new_vecs, new_db, old_db_path=old_db, covered_uuids=covered)
+    write_db(new_docs, new_vecs, new_db, export_mtime=0.0, old_db_path=old_db, covered_uuids=covered)
 
     ids = _chunk_ids(new_db)
     assert f"{ai_uuid}:0" in ids, "orphaned claude_ai chunk should be merged"
