@@ -65,11 +65,53 @@ def get_model():
     return _model
 
 
-def embed_documents(docs: list[Document]) -> np.ndarray:
-    """Embed document text as-is (no prefix) — these are the passages."""
+def embed_documents(
+    docs: list[Document],
+    checkpoint_path: "Path | None" = None,
+    cache_key: str = "",
+) -> np.ndarray:
+    """Embed document text as-is (no prefix) — these are the passages.
+
+    If checkpoint_path is given, resume from a prior interrupted run when the
+    cache_key matches (format: "<model>:<export_mtime>"). Progress is saved
+    after every batch so Ctrl-C only loses at most one batch of work.
+    """
+    from pathlib import Path
+
     model = get_model()
     texts = [d.text for d in docs]
-    return np.array(list(model.embed(texts, batch_size=BATCH_SIZE)))
+    total = len(texts)
+
+    # --- resume ---
+    vectors: list = []
+    resume_from = 0
+    if checkpoint_path is not None and Path(checkpoint_path).exists():
+        try:
+            ckpt = np.load(checkpoint_path, allow_pickle=False)
+            if ckpt["cache_key"].item() == cache_key:
+                vectors = list(ckpt["vectors"])
+                resume_from = len(vectors)
+                print(f"  resuming from checkpoint: {resume_from}/{total} already embedded", file=sys.stderr)
+            else:
+                print("  checkpoint cache_key mismatch — starting fresh", file=sys.stderr)
+        except Exception as e:
+            print(f"  checkpoint unreadable ({e}) — starting fresh", file=sys.stderr)
+
+    # --- embed remaining ---
+    remaining = texts[resume_from:]
+    for i, vec in enumerate(model.embed(remaining, batch_size=BATCH_SIZE), 1):
+        vectors.append(vec)
+        absolute = resume_from + i
+        if i % BATCH_SIZE == 0 or absolute == total:
+            print(f"  embedded {absolute}/{total} docs", file=sys.stderr)
+            if checkpoint_path is not None:
+                np.savez(
+                    checkpoint_path,
+                    vectors=np.array(vectors, dtype="float32"),
+                    cache_key=np.array(cache_key),
+                )
+
+    return np.array(vectors, dtype="float32")
 
 
 def embed_query(text: str) -> np.ndarray:

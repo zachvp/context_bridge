@@ -167,9 +167,12 @@ def main(export_dir: Path, db_path: Path) -> None:
     covered_uuids = {d.id.split(":")[0] for d in docs if d.source == SOURCE_CLAUDE_AI}
     covered_uuids.add("memories")
 
+    checkpoint_path = db_path.with_suffix(".embed_cache.npz")
+    cache_key = f"{MODEL_NAME}:{export_mtime}"
+
     print(f"embedding {len(docs)} docs with {MODEL_NAME}...")
     start = time.time()
-    vectors = embed_documents(docs)
+    vectors = embed_documents(docs, checkpoint_path=checkpoint_path, cache_key=cache_key)
     print(f"  done in {time.time() - start:.1f}s")
 
     print(f"writing {db_path}...")
@@ -177,6 +180,8 @@ def main(export_dir: Path, db_path: Path) -> None:
         docs, vectors, db_path, export_mtime=export_mtime, old_db_path=db_path, covered_uuids=covered_uuids
     )
     print(f"  {db_path} ({db_path.stat().st_size / 1e6:.1f} MB)")
+
+    checkpoint_path.unlink(missing_ok=True)
 
 
 if __name__ == "__main__":
