@@ -2,7 +2,11 @@
 set -e
 
 echo "--- format check ---"
-ruff format --check .
+if ! ruff format --check . 2>&1; then
+    echo ""
+    echo "Fix:  ruff format <file>   (or: ruff format . to fix all)"
+    exit 1
+fi
 
 echo "--- docker build ---"
 docker build -f tests/Dockerfile -t context-bridge-test .
