@@ -12,6 +12,7 @@ Usage:
 """
 
 import argparse
+import hashlib
 import os
 import sqlite3
 import sys
@@ -94,6 +95,7 @@ def write_db(
     db_path: Path,
     *,
     export_mtime: float,
+    export_hash: str | None = None,
     old_db_path: Path | None = None,
     covered_uuids: set[str] | None = None,
 ) -> None:
@@ -126,8 +128,8 @@ def write_db(
         ),
     )
     conn.execute(
-        "INSERT INTO meta (model_name, dim, built_at, export_mtime) VALUES (?, ?, ?, ?)",
-        (MODEL_NAME, vectors.shape[1], datetime.now(timezone.utc).isoformat(), export_mtime),
+        "INSERT INTO meta (model_name, dim, built_at, export_mtime, export_hash) VALUES (?, ?, ?, ?, ?)",
+        (MODEL_NAME, vectors.shape[1], datetime.now(timezone.utc).isoformat(), export_mtime, export_hash),
     )
 
     if old_db_path is not None and covered_uuids is not None:
@@ -141,18 +143,33 @@ def write_db(
     os.replace(tmp_path, db_path)  # atomic on the same filesystem
 
 
+def _sha256(path: Path) -> str:
+    h = hashlib.sha256()
+    with path.open("rb") as f:
+        for chunk in iter(lambda: f.read(1 << 20), b""):
+            h.update(chunk)
+    return h.hexdigest()
+
+
 def main(export_dir: Path, db_path: Path) -> None:
     conversations_path = export_dir / "conversations.json"
     export_mtime = conversations_path.stat().st_mtime
+    export_hash = _sha256(conversations_path)
 
     if db_path.exists():
         try:
             old_conn = sqlite3.connect(f"file:{db_path}?mode=ro", uri=True)
-            row = old_conn.execute("SELECT export_mtime FROM meta LIMIT 1").fetchone()
+            row = old_conn.execute("SELECT export_mtime, export_hash FROM meta LIMIT 1").fetchone()
             old_conn.close()
-            if row and row[0] is not None and export_mtime <= row[0]:
-                print("Claude.ai export unchanged — skipping.")
-                return
+            if row:
+                old_mtime, old_hash = row
+                # Prefer hash comparison; fall back to mtime for DBs without a stored hash.
+                unchanged = (old_hash is not None and export_hash == old_hash) or (
+                    old_hash is None and old_mtime is not None and export_mtime <= old_mtime
+                )
+                if unchanged:
+                    print("Claude.ai export unchanged — skipping.")
+                    return
         except sqlite3.OperationalError:
             pass  # pre-migration DB without export_mtime column — proceed with rebuild
 
@@ -168,7 +185,7 @@ def main(export_dir: Path, db_path: Path) -> None:
     covered_uuids.add("memories")
 
     checkpoint_path = db_path.with_suffix(".embed_cache.npz")
-    cache_key = f"{MODEL_NAME}:{export_mtime}"
+    cache_key = f"{MODEL_NAME}:{export_hash}"
 
     print(f"embedding {len(docs)} docs with {MODEL_NAME}...")
     start = time.time()
@@ -177,7 +194,13 @@ def main(export_dir: Path, db_path: Path) -> None:
 
     print(f"writing {db_path}...")
     write_db(
-        docs, vectors, db_path, export_mtime=export_mtime, old_db_path=db_path, covered_uuids=covered_uuids
+        docs,
+        vectors,
+        db_path,
+        export_mtime=export_mtime,
+        export_hash=export_hash,
+        old_db_path=db_path,
+        covered_uuids=covered_uuids,
     )
     print(f"  {db_path} ({db_path.stat().st_size / 1e6:.1f} MB)")
 

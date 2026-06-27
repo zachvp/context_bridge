@@ -6,5 +6,8 @@ data/
 __pycache__/
 *.log
 chat_memory.db
+*.npz
 .env
 .vscode/
+
+.claude/read_cache.json
