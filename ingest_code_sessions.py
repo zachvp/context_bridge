@@ -269,36 +269,37 @@ def main(db_path: Path, sessions_dir: Path, pruned_out=None) -> None:
     session_files = list(sessions_dir.glob("*/*.jsonl"))
     print(f"found {len(session_files)} session files")
 
-    new_count = updated_count = skipped_count = 0
+    new_count = updated_count = 0
+    skip_grace = skip_current = skip_problem = skip_innocuous = 0
 
     for path in session_files:
         mtime = path.stat().st_mtime
         session_uuid = path.stem
 
         if now - mtime < MTIME_GRACE:
-            skipped_count += 1
+            skip_grace += 1
             continue
 
         if session_uuid in ingested and ingested[session_uuid] >= mtime:
-            skipped_count += 1
+            skip_current += 1
             continue
 
         try:
             nodes, adjacency, root_uuid, title, cwd = parse_session(path)
         except OSError as e:
             print(f"  warning: skipping {path.name} — {e}", file=sys.stderr)
-            skipped_count += 1
+            skip_problem += 1
             continue
 
         if not nodes:
-            skipped_count += 1
+            skip_innocuous += 1
             continue
         if root_uuid is None:
             print(
                 f"  warning: skipping {path.name} — no root message found (malformed session)",
                 file=sys.stderr,
             )
-            skipped_count += 1
+            skip_problem += 1
             continue
 
         project = Path(cwd).name if cwd else path.parent.name
@@ -311,7 +312,7 @@ def main(db_path: Path, sessions_dir: Path, pruned_out=None) -> None:
 
         docs = session_to_documents(session_uuid, canonical, title, project)
         if not docs:
-            skipped_count += 1
+            skip_innocuous += 1
             continue
 
         vectors = embed_documents(docs)
@@ -323,7 +324,18 @@ def main(db_path: Path, sessions_dir: Path, pruned_out=None) -> None:
         print(f"  {'new' if is_new else 'updated'}: {title!r} ({project}) — {len(docs)} chunks")
 
     conn.close()
-    print(f"\ndone: {new_count} new, {updated_count} updated, {skipped_count} skipped")
+
+    skipped_total = skip_grace + skip_current + skip_problem + skip_innocuous
+    skip_parts = [f"{skip_current} already up-to-date"]
+    if skip_grace:
+        skip_parts.append(f"{skip_grace} too recent (grace period)")
+    if skip_innocuous:
+        skip_parts.append(f"{skip_innocuous} empty")
+    if skip_problem:
+        skip_parts.append(f"{skip_problem} malformed/unreadable (see warnings above)")
+    print(
+        f"\ndone: {new_count} new, {updated_count} updated, {skipped_total} skipped ({'; '.join(skip_parts)})"
+    )
 
 
 if __name__ == "__main__":
