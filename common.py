@@ -35,6 +35,7 @@ MAX_CHUNK_CHARS = 1_800
 # Source identifiers — add new values here when supporting additional AI tools.
 SOURCE_CLAUDE_AI = "claude_ai"
 SOURCE_CLAUDE_CODE = "claude_code"
+SOURCE_WEB = "web"
 
 
 @dataclass
@@ -88,3 +89,35 @@ def split_oversized(body: str, max_chars: int) -> list[str]:
     if len(body) <= max_chars:
         return [body]
     return [body[i : i + max_chars] for i in range(0, len(body), max_chars)]
+
+
+def chunk_markdown(text: str, max_chars: int = MAX_CHUNK_CHARS) -> list[tuple[str, str]]:
+    """Split markdown into (heading, body) chunks on ## / ### boundaries.
+
+    Returns a list of (section_heading, section_text) pairs. The heading is
+    the nearest ## or ### line above the content; top-of-file content before
+    any heading uses an empty string heading. Each pair is then subject to
+    split_oversized so no chunk exceeds max_chars.
+    """
+    import re
+    heading_re = re.compile(r"^(#{1,3} .+)$", re.MULTILINE)
+
+    chunks: list[tuple[str, str]] = []
+    last_heading = ""
+    last_end = 0
+
+    for m in heading_re.finditer(text):
+        body = text[last_end : m.start()].strip()
+        if body:
+            for piece in split_oversized(body, max_chars - len(last_heading) - 2):
+                chunks.append((last_heading, piece))
+        last_heading = m.group(1)
+        last_end = m.end()
+
+    # trailing content after the last heading
+    body = text[last_end:].strip()
+    if body:
+        for piece in split_oversized(body, max_chars - len(last_heading) - 2):
+            chunks.append((last_heading, piece))
+
+    return chunks
