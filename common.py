@@ -100,6 +100,7 @@ def chunk_markdown(text: str, max_chars: int = MAX_CHUNK_CHARS) -> list[tuple[st
     split_oversized so no chunk exceeds max_chars.
     """
     import re
+
     heading_re = re.compile(r"^(#{1,3} .+)$", re.MULTILINE)
 
     chunks: list[tuple[str, str]] = []

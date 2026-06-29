@@ -175,6 +175,7 @@ def main() -> None:
     db_path = Path(args.db)
     if db_path.exists():
         import shutil
+
         bak = db_path.with_suffix(".db.bak")
         shutil.copy2(db_path, bak)
         print(f"backup written to {bak}")

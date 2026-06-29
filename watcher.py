@@ -34,6 +34,7 @@ _LOG_PATH = Path(os.environ.get("WATCHER_LOG_PATH", PROJECT_ROOT / "logs" / "wat
 _LOG_MAX_BYTES = int(os.environ.get("WATCHER_LOG_MAX_BYTES", 2 * 1024 * 1024))
 _LOG_BACKUP_COUNT = int(os.environ.get("WATCHER_LOG_BACKUP_COUNT", 1))
 
+
 def _setup_logger() -> logging.Logger:
     _LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
     logger = logging.getLogger("watcher")
@@ -48,6 +49,7 @@ def _setup_logger() -> logging.Logger:
     logger.addHandler(fh)
     logger.addHandler(sh)
     return logger
+
 
 log = _setup_logger()
 
