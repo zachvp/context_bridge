@@ -12,11 +12,33 @@ Run directly for a quick manual check, or register it with Claude Code's MCP
 config to use it from a real session (beat 7).
 """
 
+import json
+import os
+import threading
+from pathlib import Path
+
 from mcp.server.fastmcp import FastMCP
 
 import query
 
 mcp = FastMCP("context-bridge")
+
+_PROJECT_ROOT = Path(__file__).parent
+_STATS_PATH = Path(os.environ.get("MCP_STATS_PATH", _PROJECT_ROOT / "logs" / "mcp_stats.json"))
+_stats_lock = threading.Lock()
+_stats: dict = {"calls": 0, "bytes_out": 0, "by_tool": {}}
+
+
+def _record(tool: str, result) -> None:
+    size = len(json.dumps(result).encode())
+    with _stats_lock:
+        _stats["calls"] += 1
+        _stats["bytes_out"] += size
+        entry = _stats["by_tool"].setdefault(tool, {"calls": 0, "bytes_out": 0})
+        entry["calls"] += 1
+        entry["bytes_out"] += size
+        _STATS_PATH.parent.mkdir(parents=True, exist_ok=True)
+        _STATS_PATH.write_text(json.dumps(_stats))
 
 
 @mcp.tool()
@@ -38,7 +60,7 @@ def search_chat_history(query_text: str, top_k: int = 5) -> list[dict]:
     - code_session hit id format: code:<uuid>:<n>  — uuid is in middle
     """
     hits = query.search(query_text, top_k=top_k)
-    return [
+    result = [
         {
             "id": h.id,
             "title": h.title,
@@ -49,6 +71,8 @@ def search_chat_history(query_text: str, top_k: int = 5) -> list[dict]:
         }
         for h in hits
     ]
+    _record("search_chat_history", result)
+    return result
 
 
 @mcp.tool()
@@ -65,7 +89,9 @@ def get_nearby_context(chunk_id: str, num_chunks: int = 2) -> str:
     range was returned (e.g. "[chunks 3–7 of 22]"). Returns empty string if
     the chunk id is not found.
     """
-    return query.get_nearby_context(chunk_id, num_chunks=num_chunks)
+    result = query.get_nearby_context(chunk_id, num_chunks=num_chunks)
+    _record("get_nearby_context", result)
+    return result
 
 
 @mcp.tool()
@@ -76,7 +102,9 @@ def get_conversation(conversation_uuid: str) -> str:
     hits (id: code:<uuid>:<n>), pass the middle uuid part, not "code".
     Returns an empty string if no conversation with that uuid is found.
     """
-    return query.get_conversation(conversation_uuid)
+    result = query.get_conversation(conversation_uuid)
+    _record("get_conversation", result)
+    return result
 
 
 if __name__ == "__main__":

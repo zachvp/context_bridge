@@ -14,3 +14,4 @@ chat_memory.db
 .claude/read_cache.session.json
 
 *.bak
+logs/

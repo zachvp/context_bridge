@@ -6,6 +6,7 @@ Path A: ~/.claude/projects/**/*.jsonl  → ingest_code_sessions.py (5 s debounce
 Path B: <project>/data/*.zip           → build_all.sh <zip>
 """
 
+import json
 import logging
 import logging.handlers
 import os
@@ -28,11 +29,75 @@ BUILD_ALL = PROJECT_ROOT / "scripts" / "build_all.sh"
 DATA_DIR = PROJECT_ROOT / "data"
 SESSIONS_DIR = Path("~/.claude/projects").expanduser()
 
+SERVER_SCRIPT = PROJECT_ROOT / "server.py"
+DB_PATH = Path(os.environ.get("CONTEXT_BRIDGE_DB_PATH") or PROJECT_ROOT / "chat_memory.db")
+
 DEBOUNCE_SECONDS = 5
+
+_mcp_proc: subprocess.Popen | None = None
+_mcp_lock = threading.Lock()
+
+
+def _fmt_bytes(n: int) -> str:
+    for unit in ("B", "KB", "MB"):
+        if n < 1024:
+            return f"{n:.0f}{unit}"
+        n /= 1024
+    return f"{n:.1f}GB"
+
+
+def _log_mcp_stats() -> None:
+    try:
+        data = json.loads(_STATS_PATH.read_text())
+        by_tool = data.get("by_tool", {})
+        tool_summary = " ".join(f"{t}={v['calls']}" for t, v in by_tool.items())
+        db_size = data.get("db_bytes")
+        db_delta = data.get("db_delta_bytes")
+        db_part = (f"  db={_fmt_bytes(db_size)}"
+                   + (f" delta=+{_fmt_bytes(db_delta)}" if db_delta else "")) if db_size else ""
+        log.info("mcp stats: calls=%d %s bytes_out=%s%s",
+                 data.get("calls", 0), tool_summary, _fmt_bytes(data.get("bytes_out", 0)), db_part)
+        _STATS_PATH.unlink()
+    except (FileNotFoundError, json.JSONDecodeError):
+        pass
+
+
+def _write_db_stats(db_bytes: int, db_delta: int) -> None:
+    try:
+        data = json.loads(_STATS_PATH.read_text()) if _STATS_PATH.exists() else {}
+    except json.JSONDecodeError:
+        data = {}
+    data["db_bytes"] = db_bytes
+    data["db_delta_bytes"] = db_delta
+    _STATS_PATH.parent.mkdir(parents=True, exist_ok=True)
+    _STATS_PATH.write_text(json.dumps(data))
+
+
+def _restart_mcp() -> None:
+    global _mcp_proc
+    with _mcp_lock:
+        if _mcp_proc is not None:
+            _log_mcp_stats()
+            log.info("mcp restart: stopping pid %d", _mcp_proc.pid)
+            _mcp_proc.terminate()
+            try:
+                _mcp_proc.wait(timeout=5)
+            except subprocess.TimeoutExpired:
+                _mcp_proc.kill()
+                _mcp_proc.wait()
+        _mcp_proc = subprocess.Popen(
+            [str(PYTHON), str(SERVER_SCRIPT)],
+            stdout=open(_MCP_LOG_PATH, "a"),
+            stderr=open(_MCP_ERR_PATH, "a"),
+        )
+        log.info("mcp restart: started pid %d", _mcp_proc.pid)
 
 _LOG_PATH = Path(os.environ.get("WATCHER_LOG_PATH", PROJECT_ROOT / "logs" / "watcher.log"))
 _LOG_MAX_BYTES = int(os.environ.get("WATCHER_LOG_MAX_BYTES", 2 * 1024 * 1024))
 _LOG_BACKUP_COUNT = int(os.environ.get("WATCHER_LOG_BACKUP_COUNT", 1))
+_MCP_LOG_PATH = _LOG_PATH.parent / "server.log"
+_MCP_ERR_PATH = _LOG_PATH.parent / "server.err"
+_STATS_PATH = _LOG_PATH.parent / "mcp_stats.json"
 
 
 def _setup_logger() -> logging.Logger:
@@ -91,12 +156,15 @@ class SessionHandler(FileSystemEventHandler):
     def _ingest(self, path: Path) -> None:
         with self._lock:
             self._timers.pop(path, None)
-        # ingest_code_sessions expects the projects root (glob is */*.jsonl)
+        db_before = DB_PATH.stat().st_size if DB_PATH.exists() else 0
         project_dir = path.parent
         _run(
             [str(PYTHON), str(INGEST_SESSIONS), "--sessions-dir", str(project_dir.parent)],
             f"ingest sessions: {project_dir.name}",
         )
+        db_after = DB_PATH.stat().st_size if DB_PATH.exists() else 0
+        _write_db_stats(db_after, db_after - db_before)
+        _restart_mcp()
 
 
 class ZipHandler(FileSystemEventHandler):
@@ -112,9 +180,11 @@ class ZipHandler(FileSystemEventHandler):
             ["bash", str(BUILD_ALL), str(path)],
             f"build_all: {path.name}",
         )
+        _restart_mcp()
 
 
 def main() -> None:
+    _restart_mcp()
     observer = Observer()
     observer.schedule(SessionHandler(), str(SESSIONS_DIR), recursive=True)
     observer.schedule(ZipHandler(), str(DATA_DIR), recursive=False)
@@ -128,6 +198,11 @@ def main() -> None:
     finally:
         observer.stop()
         observer.join()
+        with _mcp_lock:
+            if _mcp_proc is not None:
+                log.info("mcp shutdown: stopping pid %d", _mcp_proc.pid)
+                _mcp_proc.terminate()
+                _mcp_proc.wait()
 
 
 if __name__ == "__main__":
