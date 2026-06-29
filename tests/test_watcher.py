@@ -3,11 +3,13 @@
 import json
 import select
 import subprocess
-import sys
-import threading
 import time
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+
+import pytest
+
+import watcher
 
 PROJECT_ROOT = Path(__file__).parent.parent
 PYTHON = PROJECT_ROOT / ".venv" / "bin" / "python3"
@@ -36,11 +38,6 @@ def _send_initialize(proc: subprocess.Popen, timeout: float = 3.0) -> dict:
     ready, _, _ = select.select([proc.stdout], [], [], timeout)
     assert ready, "server did not respond within timeout"
     return json.loads(proc.stdout.readline())
-
-
-import pytest
-
-import watcher
 
 
 @pytest.fixture(autouse=True)
