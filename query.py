@@ -43,12 +43,15 @@ def _load(db_path: Path):
     source_types = [r[2] for r in rows]
     titles = [r[3] for r in rows]
     timestamps = [r[4] for r in rows]
-    vectors = np.stack([np.frombuffer(r[5], dtype="float32") for r in rows])
+    vectors = np.stack([np.frombuffer(r[5], dtype="float32") for r in rows]) if rows else np.empty((0, 0), dtype="float32")
     return ids, texts, source_types, titles, timestamps, vectors
 
 
 def search(query_text: str, top_k: int = 5, db_path: Path = DB_PATH) -> list[Hit]:
     ids, texts, source_types, titles, timestamps, vectors = _load(db_path)
+
+    if not ids:
+        return []
 
     query_vec = embed_query(query_text)
     # vectors and query_vec are both unit-normalized -> dot product == cosine similarity
