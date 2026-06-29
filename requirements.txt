@@ -1,3 +1,4 @@
 fastembed>=0.3.0
 numpy>=2.4.6
 mcp>=1.27.2
+watchdog>=4.0.0
