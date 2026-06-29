@@ -91,10 +91,10 @@ class SessionHandler(FileSystemEventHandler):
     def _ingest(self, path: Path) -> None:
         with self._lock:
             self._timers.pop(path, None)
-        # scope ingest to the project directory that owns this file
+        # ingest_code_sessions expects the projects root (glob is */*.jsonl)
         project_dir = path.parent
         _run(
-            [str(PYTHON), str(INGEST_SESSIONS), "--sessions-dir", str(project_dir)],
+            [str(PYTHON), str(INGEST_SESSIONS), "--sessions-dir", str(project_dir.parent)],
             f"ingest sessions: {project_dir.name}",
         )
 

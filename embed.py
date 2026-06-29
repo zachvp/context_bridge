@@ -61,7 +61,7 @@ def get_model():
         )
 
     _model = TextEmbedding(MODEL_NAME)
-    print("embedding model loaded (ONNX/CPU)", file=sys.stderr)
+    print("embedding model loaded (ONNX/CPU)")
     return _model
 
 
@@ -91,11 +91,11 @@ def embed_documents(
             if ckpt["cache_key"].item() == cache_key:
                 vectors = list(ckpt["vectors"])
                 resume_from = len(vectors)
-                print(f"  resuming from checkpoint: {resume_from}/{total} already embedded", file=sys.stderr)
+                print(f"  resuming from checkpoint: {resume_from}/{total} already embedded")
             else:
-                print("  checkpoint cache_key mismatch — starting fresh", file=sys.stderr)
+                print("  checkpoint cache_key mismatch — starting fresh")
         except Exception as e:
-            print(f"  checkpoint unreadable ({e}) — starting fresh", file=sys.stderr)
+            print(f"  checkpoint unreadable ({e}) — starting fresh")
 
     # --- embed remaining ---
     remaining = texts[resume_from:]
@@ -103,7 +103,7 @@ def embed_documents(
         vectors.append(vec)
         absolute = resume_from + i
         if i % BATCH_SIZE == 0 or absolute == total:
-            print(f"  embedded {absolute}/{total} docs", file=sys.stderr)
+            print(f"  embedded {absolute}/{total} docs")
             if checkpoint_path is not None:
                 np.savez(
                     checkpoint_path,
