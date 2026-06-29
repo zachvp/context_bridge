@@ -53,10 +53,18 @@ def _log_mcp_stats() -> None:
         tool_summary = " ".join(f"{t}={v['calls']}" for t, v in by_tool.items())
         db_size = data.get("db_bytes")
         db_delta = data.get("db_delta_bytes")
-        db_part = (f"  db={_fmt_bytes(db_size)}"
-                   + (f" delta=+{_fmt_bytes(db_delta)}" if db_delta else "")) if db_size else ""
-        log.info("mcp stats: calls=%d %s bytes_out=%s%s",
-                 data.get("calls", 0), tool_summary, _fmt_bytes(data.get("bytes_out", 0)), db_part)
+        db_part = (
+            (f"  db={_fmt_bytes(db_size)}" + (f" delta=+{_fmt_bytes(db_delta)}" if db_delta else ""))
+            if db_size
+            else ""
+        )
+        log.info(
+            "mcp stats: calls=%d %s bytes_out=%s%s",
+            data.get("calls", 0),
+            tool_summary,
+            _fmt_bytes(data.get("bytes_out", 0)),
+            db_part,
+        )
         _STATS_PATH.unlink()
     except (FileNotFoundError, json.JSONDecodeError):
         pass
@@ -91,6 +99,7 @@ def _restart_mcp() -> None:
             stderr=open(_MCP_ERR_PATH, "a"),
         )
         log.info("mcp restart: started pid %d", _mcp_proc.pid)
+
 
 _LOG_PATH = Path(os.environ.get("WATCHER_LOG_PATH", PROJECT_ROOT / "logs" / "watcher.log"))
 _LOG_MAX_BYTES = int(os.environ.get("WATCHER_LOG_MAX_BYTES", 2 * 1024 * 1024))

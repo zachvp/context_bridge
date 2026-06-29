@@ -13,10 +13,21 @@ PROJECT_ROOT = Path(__file__).parent.parent
 PYTHON = PROJECT_ROOT / ".venv" / "bin" / "python3"
 SERVER_SCRIPT = PROJECT_ROOT / "server.py"
 
-_INIT_MSG = json.dumps({
-    "jsonrpc": "2.0", "id": 1, "method": "initialize",
-    "params": {"protocolVersion": "2024-11-05", "capabilities": {}, "clientInfo": {"name": "test", "version": "0"}},
-}) + "\n"
+_INIT_MSG = (
+    json.dumps(
+        {
+            "jsonrpc": "2.0",
+            "id": 1,
+            "method": "initialize",
+            "params": {
+                "protocolVersion": "2024-11-05",
+                "capabilities": {},
+                "clientInfo": {"name": "test", "version": "0"},
+            },
+        }
+    )
+    + "\n"
+)
 
 
 def _send_initialize(proc: subprocess.Popen, timeout: float = 3.0) -> dict:
@@ -25,6 +36,7 @@ def _send_initialize(proc: subprocess.Popen, timeout: float = 3.0) -> dict:
     ready, _, _ = select.select([proc.stdout], [], [], timeout)
     assert ready, "server did not respond within timeout"
     return json.loads(proc.stdout.readline())
+
 
 import pytest
 
@@ -93,9 +105,7 @@ def test_ingest_triggers_mcp_restart(tmp_path: Path):
     handler = watcher.SessionHandler()
     mock_proc = make_mock_proc()
 
-    with patch("watcher.subprocess.run"), patch(
-        "watcher.subprocess.Popen", return_value=mock_proc
-    ):
+    with patch("watcher.subprocess.run"), patch("watcher.subprocess.Popen", return_value=mock_proc):
         handler._ingest(jsonl)
 
     assert watcher._mcp_proc is mock_proc
@@ -104,6 +114,7 @@ def test_ingest_triggers_mcp_restart(tmp_path: Path):
 # ---------------------------------------------------------------------------
 # Integration: real server.py process
 # ---------------------------------------------------------------------------
+
 
 def _spawn_server() -> subprocess.Popen:
     return subprocess.Popen(
@@ -150,7 +161,9 @@ def test_tool_call_writes_stats_sidecar(tmp_path):
 
     proc = subprocess.Popen(
         [str(PYTHON), str(SERVER_SCRIPT)],
-        stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+        stdin=subprocess.PIPE,
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
         env=env,
     )
     try:
@@ -161,10 +174,20 @@ def test_tool_call_writes_stats_sidecar(tmp_path):
         proc.stdin.write(notif.encode())
         proc.stdin.flush()
 
-        call_msg = json.dumps({
-            "jsonrpc": "2.0", "id": 2, "method": "tools/call",
-            "params": {"name": "search_chat_history", "arguments": {"query_text": "test", "top_k": 1}},
-        }) + "\n"
+        call_msg = (
+            json.dumps(
+                {
+                    "jsonrpc": "2.0",
+                    "id": 2,
+                    "method": "tools/call",
+                    "params": {
+                        "name": "search_chat_history",
+                        "arguments": {"query_text": "test", "top_k": 1},
+                    },
+                }
+            )
+            + "\n"
+        )
         proc.stdin.write(call_msg.encode())
         proc.stdin.flush()
 
