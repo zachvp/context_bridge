@@ -42,7 +42,7 @@ def _fmt_bytes(n: int) -> str:
     for unit in ("B", "KB", "MB"):
         if n < 1024:
             return f"{n:.0f}{unit}"
-        n /= 1024
+        n //= 1024
     return f"{n:.1f}GB"
 
 
@@ -151,7 +151,7 @@ class SessionHandler(FileSystemEventHandler):
     def _schedule(self, event: FileSystemEvent) -> None:
         if event.is_directory:
             return
-        path = Path(event.src_path)
+        path = Path(str(event.src_path))
         if path.suffix != ".jsonl":
             return
         with self._lock:
@@ -182,7 +182,7 @@ class ZipHandler(FileSystemEventHandler):
     def on_created(self, event: FileSystemEvent) -> None:
         if event.is_directory:
             return
-        path = Path(event.src_path)
+        path = Path(str(event.src_path))
         if path.suffix not in {".zip", ".dms"}:
             return
         _run(
