@@ -6,6 +6,8 @@ Path A: ~/.claude/projects/**/*.jsonl  → ingest_code_sessions.py (5 s debounce
 Path B: <project>/data/*.zip           → build_all.sh <zip>
 """
 
+import logging
+import logging.handlers
 import os
 import subprocess
 import sys
@@ -28,12 +30,33 @@ SESSIONS_DIR = Path("~/.claude/projects").expanduser()
 
 DEBOUNCE_SECONDS = 5
 
+_LOG_PATH = Path(os.environ.get("WATCHER_LOG_PATH", PROJECT_ROOT / "logs" / "watcher.log"))
+_LOG_MAX_BYTES = int(os.environ.get("WATCHER_LOG_MAX_BYTES", 2 * 1024 * 1024))
+_LOG_BACKUP_COUNT = int(os.environ.get("WATCHER_LOG_BACKUP_COUNT", 1))
+
+def _setup_logger() -> logging.Logger:
+    _LOG_PATH.parent.mkdir(parents=True, exist_ok=True)
+    logger = logging.getLogger("watcher")
+    logger.setLevel(logging.DEBUG)
+    fmt = logging.Formatter("%(asctime)s [%(levelname)s] %(message)s", datefmt="%Y-%m-%dT%H:%M:%S")
+    fh = logging.handlers.RotatingFileHandler(
+        _LOG_PATH, maxBytes=_LOG_MAX_BYTES, backupCount=_LOG_BACKUP_COUNT
+    )
+    fh.setFormatter(fmt)
+    sh = logging.StreamHandler(sys.stdout)
+    sh.setFormatter(fmt)
+    logger.addHandler(fh)
+    logger.addHandler(sh)
+    return logger
+
+log = _setup_logger()
+
 
 def _run(cmd: list, label: str) -> None:
-    print(f"[watcher] {label}", flush=True)
+    log.info(label)
     result = subprocess.run(cmd, capture_output=False)
     if result.returncode != 0:
-        print(f"[watcher] ERROR: {label} exited {result.returncode}", file=sys.stderr, flush=True)
+        log.error("%s exited %d", label, result.returncode)
 
 
 class SessionHandler(FileSystemEventHandler):
@@ -94,7 +117,7 @@ def main() -> None:
     observer.schedule(SessionHandler(), str(SESSIONS_DIR), recursive=True)
     observer.schedule(ZipHandler(), str(DATA_DIR), recursive=False)
     observer.start()
-    print(f"[watcher] watching {SESSIONS_DIR} and {DATA_DIR}", flush=True)
+    log.info("watching %s and %s", SESSIONS_DIR, DATA_DIR)
     try:
         while True:
             time.sleep(1)
