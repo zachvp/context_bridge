@@ -59,20 +59,23 @@ def search_chat_history(query_text: str, top_k: int = 5) -> list[dict]:
     - conversation hit id format: <uuid>:<n>  — uuid is on left ":"
     - code_session hit id format: code:<uuid>:<n>  — uuid is in middle
     """
-    hits = query.search(query_text, top_k=top_k)
-    result = [
-        {
-            "id": h.id,
-            "title": h.title,
-            "source_type": h.source_type,
-            "timestamp": h.timestamp,
-            "score": round(h.score, 4),
-            "text": h.text,
-        }
-        for h in hits
-    ]
-    _record("search_chat_history", result)
-    return result
+    result = []
+    try:
+        hits = query.search(query_text, top_k=top_k)
+        result = [
+            {
+                "id": h.id,
+                "title": h.title,
+                "source_type": h.source_type,
+                "timestamp": h.timestamp,
+                "score": round(h.score, 4),
+                "text": h.text,
+            }
+            for h in hits
+        ]
+        return result
+    finally:
+        _record("search_chat_history", result)
 
 
 @mcp.tool()
@@ -89,9 +92,12 @@ def get_nearby_context(chunk_id: str, num_chunks: int = 2) -> str:
     range was returned (e.g. "[chunks 3–7 of 22]"). Returns empty string if
     the chunk id is not found.
     """
-    result = query.get_nearby_context(chunk_id, num_chunks=num_chunks)
-    _record("get_nearby_context", result)
-    return result
+    result = ""
+    try:
+        result = query.get_nearby_context(chunk_id, num_chunks=num_chunks)
+        return result
+    finally:
+        _record("get_nearby_context", result)
 
 
 @mcp.tool()
@@ -102,9 +108,12 @@ def get_conversation(conversation_uuid: str) -> str:
     hits (id: code:<uuid>:<n>), pass the middle uuid part, not "code".
     Returns an empty string if no conversation with that uuid is found.
     """
-    result = query.get_conversation(conversation_uuid)
-    _record("get_conversation", result)
-    return result
+    result = ""
+    try:
+        result = query.get_conversation(conversation_uuid)
+        return result
+    finally:
+        _record("get_conversation", result)
 
 
 if __name__ == "__main__":
