@@ -43,7 +43,11 @@ def _load(db_path: Path):
     source_types = [r[2] for r in rows]
     titles = [r[3] for r in rows]
     timestamps = [r[4] for r in rows]
-    vectors = np.stack([np.frombuffer(r[5], dtype="float32") for r in rows]) if rows else np.empty((0, 0), dtype="float32")
+    vectors = (
+        np.stack([np.frombuffer(r[5], dtype="float32") for r in rows])
+        if rows
+        else np.empty((0, 0), dtype="float32")
+    )
     return ids, texts, source_types, titles, timestamps, vectors
 
 
